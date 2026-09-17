@@ -84,6 +84,19 @@ export const GRADE_OPTIONS: { value: Grade; label: string }[] = [
   { value: 'a_level', label: "A'Level" },
 ];
 
+// ── Student Medium Options ────────────────────────────────────
+export type StudentMedium = 'sinhala' | 'english';
+
+export const MEDIUM_OPTIONS: { value: StudentMedium; label: string; price: number }[] = [
+  { value: 'sinhala', label: 'Sinhala Medium', price: 1600 },
+  { value: 'english', label: 'English Medium', price: 2000 },
+];
+
+export const MEDIUM_PRICES: Record<StudentMedium, number> = {
+  sinhala: 1600,
+  english: 2000,
+};
+
 // ── Claim Request ─────────────────────────────────────────────
 export type ClaimStatus = 'pending' | 'paid' | 'rejected';
 

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       action: 'student.create',
       entityType: 'Student',
       entityId: result.student._id,
-      after: { name: parsed.data.name, mobileNumber: parsed.data.mobileNumber, grade: parsed.data.grade, isNew: result.isNew },
+      after: { name: parsed.data.name, mobileNumber: parsed.data.mobileNumber, grade: parsed.data.grade, medium: parsed.data.medium, isNew: result.isNew },
       ip,
       userAgent,
       metadata: {

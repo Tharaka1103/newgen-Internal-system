@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface AuditLogEntry {
   _id: string;
@@ -159,19 +160,16 @@ export default function AuditsPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Page {page} of {totalPages} ({total} total)</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-              ← Prev
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-              Next →
-            </Button>
+          {/* Pagination */}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={total}
+              pageSize={30}
+              onPageChange={setPage}
+              itemName="activity logs"
+            />
           </div>
         </div>
       )}

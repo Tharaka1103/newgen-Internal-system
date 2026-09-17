@@ -35,12 +35,14 @@ import {
   GraduationCap, Phone, Calendar, CheckCircle2
 } from 'lucide-react';
 import { GRADE_OPTIONS, Grade } from '@/lib/types';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface Student {
   _id: string;
   name: string;
   mobileNumber: string;
   grade: Grade;
+  medium?: 'sinhala' | 'english';
   registrationDate: string;
   status: 'active' | 'inactive';
 }
@@ -264,9 +266,17 @@ function StudentsManagementContent() {
                     <span className="font-mono text-xs text-muted-foreground">{student.mobileNumber}</span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-medium text-xs">
-                      {getGradeLabel(student.grade)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="outline" className="font-medium text-xs">
+                        {getGradeLabel(student.grade)}
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] capitalize font-normal"
+                      >
+                        {student.medium === 'english' ? 'English' : 'Sinhala'}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -320,33 +330,16 @@ function StudentsManagementContent() {
           </Table>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
-              <span>
-                Page {page} of {totalPages} ({totalCount} students)
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={25}
+              onPageChange={setPage}
+              itemName="students"
+            />
+          </div>
         </div>
       )}
 
@@ -411,7 +404,7 @@ function StudentsManagementContent() {
 // ── Register New Student Dialog ────────────────────────────────────────
 
 function CreateStudentDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [formData, setFormData] = useState({ name: '', mobileNumber: '', grade: '' });
+  const [formData, setFormData] = useState({ name: '', mobileNumber: '', grade: '', medium: 'sinhala' as 'sinhala' | 'english' });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -439,7 +432,7 @@ function CreateStudentDialog({ open, onClose }: { open: boolean; onClose: () => 
       });
       const data = await res.json();
       if (data.success) {
-        setFormData({ name: '', mobileNumber: '', grade: '' });
+        setFormData({ name: '', mobileNumber: '', grade: '', medium: 'sinhala' });
         onClose();
       } else {
         setError(data.error || 'Failed to register student.');
@@ -513,6 +506,22 @@ function CreateStudentDialog({ open, onClose }: { open: boolean; onClose: () => 
               </SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-student-medium">Instruction Medium *</Label>
+            <Select
+              value={formData.medium}
+              onValueChange={(v) => setFormData((f) => ({ ...f, medium: (v ?? 'sinhala') as 'sinhala' | 'english' }))}
+            >
+              <SelectTrigger id="create-student-medium">
+                <SelectValue placeholder="Select Medium" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sinhala">Sinhala Medium (Rs. 1,600 / mo)</SelectItem>
+                <SelectItem value="english">English Medium (Rs. 2,000 / mo)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <DialogFooter className="gap-2 pt-3 border-t shrink-0">
@@ -541,11 +550,22 @@ function EditStudentDialog({
     name: student.name,
     mobileNumber: student.mobileNumber,
     grade: student.grade,
+    medium: student.medium || 'sinhala',
     status: student.status || 'active',
   });
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setFormData({
+      name: student.name,
+      mobileNumber: student.mobileNumber,
+      grade: student.grade,
+      medium: student.medium || 'sinhala',
+      status: student.status || 'active',
+    });
+  }, [student]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -635,6 +655,22 @@ function EditStudentDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label htmlFor="edit-student-medium">Medium</Label>
+            <Select
+              value={formData.medium}
+              onValueChange={(v) => setFormData((f) => ({ ...f, medium: (v ?? 'sinhala') as 'sinhala' | 'english' }))}
+            >
+              <SelectTrigger id="edit-student-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sinhala">Sinhala Medium (Rs. 1,600 / mo)</SelectItem>
+                <SelectItem value="english">English Medium (Rs. 2,000 / mo)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="edit-student-status">Status</Label>
             <Select
               value={formData.status}
@@ -705,6 +741,10 @@ function StudentProfileDialog({ student, onClose }: { student: Student; onClose:
             </span>
             <span>·</span>
             <span>Grade: {gradeName}</span>
+            <span>·</span>
+            <Badge variant="secondary" className="text-[10px] capitalize font-normal">
+              {student.medium === 'english' ? 'English Medium' : 'Sinhala Medium'}
+            </Badge>
             <span>·</span>
             <Badge variant={student.status === 'active' ? 'outline' : 'secondary'} className="text-[10px]">
               {student.status}

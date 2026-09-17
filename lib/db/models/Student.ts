@@ -6,6 +6,7 @@ export interface IStudent extends Document {
   name: string;
   mobileNumber: string;
   grade: Grade;
+  medium: 'sinhala' | 'english';
   registrationDate: Date;
   status: 'active' | 'inactive';
   autoCreated: boolean; // true if auto-created on registration entry
@@ -27,6 +28,11 @@ const StudentSchema = new Schema<IStudent>(
       ],
       required: true,
     },
+    medium: {
+      type: String,
+      enum: ['sinhala', 'english'],
+      default: 'sinhala',
+    },
     registrationDate: { type: Date, required: true, default: Date.now },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     autoCreated: { type: Boolean, default: false },
@@ -39,5 +45,11 @@ StudentSchema.index({ mobileNumber: 1 }, { unique: true });
 StudentSchema.index({ grade: 1, status: 1 });
 StudentSchema.index({ registrationDate: -1 });
 
+// Ensure cached model matches the updated schema (vital for Next.js hot module reloading)
+if (mongoose.models.Student && !mongoose.models.Student.schema?.path('medium')) {
+  delete (mongoose.models as any).Student;
+}
+
 const Student: Model<IStudent> = mongoose.models.Student || mongoose.model<IStudent>('Student', StudentSchema);
 export default Student;
+

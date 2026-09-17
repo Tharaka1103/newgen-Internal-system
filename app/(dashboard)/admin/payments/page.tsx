@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { AlertCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface PaymentRecord {
   _id: string;
@@ -30,10 +31,18 @@ interface PaymentRecord {
   createdAt: string;
 }
 
+interface StudentPreview {
+  _id: string;
+  name: string;
+  grade: string;
+  medium?: 'sinhala' | 'english';
+  status?: string;
+}
+
 // Attribution preview hook
 function useAttributionPreview(mobileNumber: string, month: string) {
   const [preview, setPreview] = useState<{
-    student?: { name: string; grade: string } | null;
+    student?: StudentPreview | null;
     attribution?: { agentName: string; isExactMonth: boolean; matchedMonth: string } | null;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +61,7 @@ function useAttributionPreview(mobileNumber: string, month: string) {
       } finally {
         setIsLoading(false);
       }
-    }, 400);
+    }, 350);
     return () => clearTimeout(t);
   }, [mobileNumber, month]);
 
@@ -65,6 +74,7 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [mobileNumber, setMobileNumber] = useState('');
   const [amount, setAmount] = useState('');
+  const [customPrice, setCustomPrice] = useState(false);
   const [month, setMonth] = useState(currentMonth);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,25 +82,44 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   const { preview, isLoading: previewLoading } = useAttributionPreview(mobileNumber, month);
 
+  // Automatically update price whenever student is identified based on their medium
+  useEffect(() => {
+    if (preview?.student) {
+      const defaultFee = preview.student.medium === 'english' ? 2000 : 1600;
+      setAmount(String(defaultFee));
+    }
+  }, [preview?.student]);
+
   const handleSubmit = async () => {
     if (!preview?.student) {
       setError('No student found with this mobile number. Please register the student first.');
       return;
     }
+    const finalAmount = parseFloat(amount);
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      setError('Please enter a valid payment amount.');
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
     try {
       const res = await fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileNumber, amount: parseFloat(amount), paymentMonth: month }),
+        body: JSON.stringify({ mobileNumber, amount: finalAmount, paymentMonth: month }),
       });
       const data = await res.json();
       if (data.success) {
         setSuccess(true);
-        setTimeout(() => { setSuccess(false); onClose(); }, 1500);
+        setTimeout(() => {
+          setSuccess(false);
+          setMobileNumber('');
+          setAmount('');
+          onClose();
+        }, 1200);
       } else {
-        setError(data.error);
+        setError(data.error || 'Failed to record payment');
       }
     } finally {
       setIsLoading(false);
@@ -101,65 +130,142 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col p-6">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Record Payment</DialogTitle>
-          <DialogDescription>Attribution is resolved automatically based on call records.</DialogDescription>
+          <DialogTitle>Record Student Payment</DialogTitle>
+          <DialogDescription>
+            Enter mobile number to instantly verify the student and calculate tuition fees.
+          </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-4 py-2 pr-1">
-          {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-2 pr-1">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-1.5">
-            <Label htmlFor="payment-mobile">Mobile Number</Label>
+            <Label htmlFor="payment-mobile">Student Mobile Number *</Label>
             <Input
               id="payment-mobile"
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value)}
-              placeholder="07X XXXX XXX"
+              placeholder="07X XXXXXXX"
+              autoFocus
             />
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="payment-month">Payment Month</Label>
             <Input id="payment-month" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
           </div>
 
-          {/* Live attribution preview */}
-          {mobileNumber.length >= 9 && month && (
-            <div className="p-3 rounded-md bg-muted/50 space-y-2">
+          {/* Student Confirmation Card (Instant Verification) */}
+          {mobileNumber.length >= 9 && (
+            <div className="space-y-2">
               {previewLoading ? (
-                <Skeleton className="h-5 w-40" />
-              ) : preview ? (
-                <>
-                  {preview.student ? (
-                    <p className="text-sm font-medium">{preview.student.name}</p>
-                  ) : (
-                    <p className="text-sm text-destructive">No student found with this mobile number</p>
+                <div className="p-3.5 rounded-lg border bg-muted/40 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              ) : preview?.student ? (
+                <div className="p-3.5 rounded-lg border bg-card space-y-2.5 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                        {preview.student.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">{preview.student.name}</p>
+                        <p className="text-[11px] text-muted-foreground font-mono">{mobileNumber}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="outline" className="text-[11px] font-medium">
+                        {preview.student.grade.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                      <Badge
+                        variant={preview.student.medium === 'english' ? 'default' : 'secondary'}
+                        className="text-[10px] capitalize"
+                      >
+                        {preview.student.medium === 'english' ? 'English Medium' : 'Sinhala Medium'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {preview.attribution && (
+                    <div className="pt-2 border-t flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground text-[11px]">Attributed Agent:</span>
+                      <AttributionBadge
+                        agentName={preview.attribution.agentName}
+                        isExactMonth={preview.attribution.isExactMonth}
+                        matchedMonth={preview.attribution.matchedMonth}
+                      />
+                    </div>
                   )}
-                  <AttributionBadge
-                    agentName={preview.attribution?.agentName}
-                    isExactMonth={preview.attribution?.isExactMonth}
-                    matchedMonth={preview.attribution?.matchedMonth}
-                    noMatch={!preview.attribution}
-                  />
-                </>
+                </div>
+              ) : preview && !preview.student ? (
+                <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-xs text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>No student registered with this number. Please register the student first.</span>
+                </div>
               ) : null}
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="payment-amount">Amount (Rs.)</Label>
-            <Input
-              id="payment-amount"
-              type="number"
-              min="0"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-            />
+          {/* Automatic Fee Box */}
+          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs font-semibold text-foreground">Tuition Fee</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {preview?.student?.medium === 'english'
+                    ? 'English Medium fee: Rs. 2,000'
+                    : 'Sinhala Medium fee: Rs. 1,600'}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-lg font-bold font-mono text-primary">
+                  Rs. {Number(amount || (preview?.student?.medium === 'english' ? 2000 : 1600)).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setCustomPrice(!customPrice)}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                {customPrice ? 'Use standard automated fee' : 'Customize fee amount manually'}
+              </button>
+            </div>
+
+            {customPrice && (
+              <div className="pt-2">
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Custom amount"
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter className="gap-2 pt-3 border-t border-border/60 shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isLoading || success} id="submit-payment-btn">
-            {success ? '✓ Saved!' : isLoading ? 'Saving...' : 'Record Payment'}
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || success || (mobileNumber.length >= 9 && !preview?.student)}
+            id="submit-payment-btn"
+          >
+            {success ? '✓ Recorded!' : isLoading ? 'Recording...' : 'Record Payment'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -174,6 +280,9 @@ function PaymentsContent() {
   const [search, setSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
@@ -194,16 +303,20 @@ function PaymentsContent() {
   const fetchPayments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '30' });
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (search) params.set('search', search);
       if (monthFilter) params.set('month', monthFilter);
       const res = await fetch(`/api/payments?${params.toString()}`);
       const data = await res.json();
-      if (data.success) setPayments(data.data.items);
+      if (data.success) {
+        setPayments(data.data.items || []);
+        setTotalPages(data.data.totalPages || 1);
+        setTotalCount(data.data.total || 0);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [search, monthFilter]);
+  }, [search, monthFilter, page]);
 
   useEffect(() => {
     const t = setTimeout(fetchPayments, 250);
@@ -220,7 +333,10 @@ function PaymentsContent() {
           <Input
             placeholder="Search by mobile..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-8 h-9"
             id="payments-search"
           />
@@ -228,7 +344,10 @@ function PaymentsContent() {
         <Input
           type="month"
           value={monthFilter}
-          onChange={(e) => setMonthFilter(e.target.value)}
+          onChange={(e) => {
+            setMonthFilter(e.target.value);
+            setPage(1);
+          }}
           className="w-40 h-9 text-sm"
           id="payments-month-filter"
         />
@@ -279,6 +398,18 @@ function PaymentsContent() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={20}
+              onPageChange={setPage}
+              itemName="payments"
+            />
+          </div>
         </div>
       )}
 

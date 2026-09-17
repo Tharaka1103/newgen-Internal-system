@@ -89,7 +89,13 @@ export async function previewAttribution(mobileNumber: string, month: string) {
 
   return {
     student: student
-      ? { _id: student._id, name: student.name, grade: student.grade }
+      ? {
+          _id: student._id,
+          name: student.name,
+          grade: student.grade,
+          medium: (student as any).medium ?? 'sinhala',
+          status: student.status,
+        }
       : null,
     attribution: attribution
       ? {

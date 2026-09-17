@@ -13,6 +13,7 @@ export const CreateStudentSchema = z.object({
     .max(15, 'Mobile number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format'),
   grade: z.enum(GRADE_VALUES, { message: 'Please select a valid grade' }),
+  medium: z.enum(['sinhala', 'english']).default('sinhala'),
   registrationDate: z.string().optional(), // ISO date string
   status: z.enum(['active', 'inactive']).optional(),
 });
@@ -25,6 +26,7 @@ export const UpdateStudentSchema = z.object({
     .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format')
     .optional(),
   grade: z.enum(GRADE_VALUES).optional(),
+  medium: z.enum(['sinhala', 'english']).optional(),
   status: z.enum(['active', 'inactive']).optional(),
   registrationDate: z.string().optional(),
 });

@@ -43,6 +43,7 @@ export async function registerStudent(params: RegisterStudentParams): Promise<Re
       name: input.name,
       mobileNumber: input.mobileNumber,
       grade: input.grade,
+      medium: input.medium || 'sinhala',
       registrationDate: input.registrationDate ? new Date(input.registrationDate) : new Date(),
       status: 'active',
       autoCreated,
@@ -50,10 +51,15 @@ export async function registerStudent(params: RegisterStudentParams): Promise<Re
     });
   } else {
     student = existingStudent!;
-    // Update grade/name if provided and different
-    if (input.name !== student.name || input.grade !== student.grade) {
+    // Update grade/name/medium if provided and different
+    if (
+      input.name !== student.name ||
+      input.grade !== student.grade ||
+      (input.medium && input.medium !== student.medium)
+    ) {
       student.name = input.name;
       student.grade = input.grade;
+      if (input.medium) student.medium = input.medium;
       await student.save();
     }
   }

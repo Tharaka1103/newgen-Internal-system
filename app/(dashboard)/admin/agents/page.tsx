@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { ADMIN_PERMISSIONS, DEFAULT_AGENT_PERMISSIONS, PermissionKey } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface AgentUser {
   _id: string;
@@ -303,33 +304,16 @@ function AgentsManagementContent() {
           </Table>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
-              <span>
-                Page {page} of {totalPages} ({totalCount} agents)
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={25}
+              onPageChange={setPage}
+              itemName="agents"
+            />
+          </div>
         </div>
       )}
 

@@ -32,6 +32,7 @@ import {
   CheckCircle2, KeyRound
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface AdminUser {
   _id: string;
@@ -251,33 +252,17 @@ function AdminsManagementContent() {
             </TableBody>
           </Table>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
-              <span>
-                Page {page} of {totalPages} ({totalCount} admins)
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Pagination */}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={25}
+              onPageChange={setPage}
+              itemName="administrators"
+            />
+          </div>
         </div>
       )}
 

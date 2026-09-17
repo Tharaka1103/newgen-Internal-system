@@ -66,16 +66,25 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       name: student.name,
       mobileNumber: student.mobileNumber,
       grade: student.grade,
+      medium: student.medium ?? 'sinhala',
       status: student.status,
     };
 
-    if (parsed.data.name) student.name = parsed.data.name;
-    if (parsed.data.mobileNumber) student.mobileNumber = parsed.data.mobileNumber;
-    if (parsed.data.grade) student.grade = parsed.data.grade;
-    if (parsed.data.status) student.status = parsed.data.status;
-    if (parsed.data.registrationDate) student.registrationDate = new Date(parsed.data.registrationDate);
+    const updateData: Record<string, any> = {};
+    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.mobileNumber !== undefined) updateData.mobileNumber = parsed.data.mobileNumber;
+    if (parsed.data.grade !== undefined) updateData.grade = parsed.data.grade;
+    if (parsed.data.medium !== undefined) updateData.medium = parsed.data.medium;
+    if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+    if (parsed.data.registrationDate !== undefined) {
+      updateData.registrationDate = new Date(parsed.data.registrationDate);
+    }
 
-    await student.save();
+    const updatedStudent = await Student.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, returnDocument: 'after', runValidators: true }
+    );
 
     const { ip, userAgent } = extractRequestMeta(request);
     await writeAuditLog({
@@ -86,16 +95,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       entityId: student._id,
       before,
       after: {
-        name: student.name,
-        mobileNumber: student.mobileNumber,
-        grade: student.grade,
-        status: student.status,
+        name: updatedStudent?.name,
+        mobileNumber: updatedStudent?.mobileNumber,
+        grade: updatedStudent?.grade,
+        medium: updatedStudent?.medium ?? 'sinhala',
+        status: updatedStudent?.status,
       },
       ip,
       userAgent,
     });
 
-    return NextResponse.json({ success: true, data: student });
+    return NextResponse.json({ success: true, data: updatedStudent });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update student';
     return NextResponse.json({ success: false, error: message }, { status: 500 });

@@ -22,6 +22,7 @@ import {
 import { AlertCircle, Phone } from 'lucide-react';
 import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
 interface CallRecord {
   _id: string;
@@ -213,6 +214,9 @@ function CallRecordsContent() {
   const [showNewRecord, setShowNewRecord] = useState(false);
   const [showClaim, setShowClaim] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
@@ -234,16 +238,20 @@ function CallRecordsContent() {
     setIsLoading(true);
     try {
       const [recordsRes, claimsRes] = await Promise.all([
-        fetch('/api/call-records?limit=50'),
+        fetch(`/api/call-records?page=${page}&limit=20`),
         fetch('/api/claims?limit=1'),
       ]);
       const [recordsData, claimsData] = await Promise.all([recordsRes.json(), claimsRes.json()]);
-      if (recordsData.success) setRecords(recordsData.data.items);
+      if (recordsData.success) {
+        setRecords(recordsData.data.items || []);
+        setTotalPages(recordsData.data.totalPages || 1);
+        setTotalCount(recordsData.data.total || 0);
+      }
       if (claimsData.success) setBalance(claimsData.data.balance ?? 0);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -311,6 +319,18 @@ function CallRecordsContent() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          <div className="border-t bg-muted/10 px-4">
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={20}
+              onPageChange={setPage}
+              itemName="call records"
+            />
+          </div>
         </div>
       )}
 
