@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function AgentSettingsPage() {
   return (
-    <div className="space-y-4 max-w-lg">
+    <div className="space-y-6 max-w-lg">
       <PageHeader title="Settings" description="Your personal preferences" />
       <Card>
         <CardHeader>

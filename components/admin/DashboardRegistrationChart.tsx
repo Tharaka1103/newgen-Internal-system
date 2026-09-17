@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis } from 'recharts';
 
@@ -11,8 +11,9 @@ const chartConfig = {
 export function DashboardRegistrationChart({ data }: { data: { month: string; count: number }[] }) {
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium font-heading">Registrations (Last 6 Months)</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium font-heading">Monthly Registrations</CardTitle>
+        <CardDescription className="text-xs">Student signups over the past 6 months</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[200px]">

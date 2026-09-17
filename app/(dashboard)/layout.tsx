@@ -3,8 +3,6 @@ import { redirect } from 'next/navigation';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
-import { QuickActionBar } from '@/components/layout/QuickActionBar';
-import { BottomBar } from '@/components/layout/BottomBar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -15,10 +13,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <AppSidebar />
       <SidebarInset className="flex flex-col min-h-screen overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-auto p-6 pb-24 relative">
+        <main className="flex-1 overflow-auto p-6 lg:p-8">
           {children}
-          <QuickActionBar />
-          <BottomBar />
         </main>
       </SidebarInset>
     </SidebarProvider>

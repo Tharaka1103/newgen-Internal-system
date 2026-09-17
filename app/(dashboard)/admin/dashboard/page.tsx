@@ -4,9 +4,9 @@ import connectDB from '@/lib/db/mongoose';
 import { Student, PaymentRecord, CreditPoint, ClaimRequest } from '@/lib/db/models';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, BookOpen, CreditCard, Clock, Trophy } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { DashboardRegistrationChart } from '@/components/admin/DashboardRegistrationChart';
 import { getRegistrationsOverTime } from '@/lib/services/report.service';
 import { toMonthStart } from '@/lib/services/matching.service';
@@ -65,10 +65,10 @@ export default async function AdminDashboardPage() {
   const data = await getDashboardData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
-        title="Dashboard"
-        description="System overview for this month"
+        title="Overview"
+        description="Your school at a glance — key numbers for this month"
       />
 
       {/* Stat cards */}
@@ -76,25 +76,22 @@ export default async function AdminDashboardPage() {
         <StatCard
           title="Total Students"
           value={data.totalStudents.toLocaleString()}
-          icon={Users}
           description="All registered students"
         />
         <StatCard
-          title="Registrations This Month"
+          title="New This Month"
           value={data.registrationsThisMonth}
-          icon={BookOpen}
+          description="Student registrations"
         />
         <StatCard
-          title="Payments This Month"
+          title="Revenue"
           value={`Rs. ${(data.paymentsThisMonth.total ?? 0).toLocaleString()}`}
-          icon={CreditCard}
-          description={`${data.paymentsThisMonth.count ?? 0} payment(s)`}
+          description={`${data.paymentsThisMonth.count ?? 0} payment(s) this month`}
         />
         <StatCard
           title="Pending Claims"
           value={data.pendingClaims}
-          icon={Clock}
-          description="Awaiting admin review"
+          description="Awaiting your review"
         />
       </div>
 
@@ -104,15 +101,13 @@ export default async function AdminDashboardPage() {
 
         {/* Mini leaderboard */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium font-heading flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Top Agents This Month
-            </CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium font-heading">Top Performers</CardTitle>
+            <CardDescription className="text-xs">Agents ranked by credit points this month</CardDescription>
           </CardHeader>
           <CardContent>
             {data.topAgents.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No credit points recorded this month yet.</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">No credit points recorded this month yet.</p>
             ) : (
               <div className="space-y-3">
                 {data.topAgents.map((agent: { _id: string; agentName: string; points: number }, index: number) => (

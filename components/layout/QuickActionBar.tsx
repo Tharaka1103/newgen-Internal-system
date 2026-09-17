@@ -14,12 +14,21 @@ interface QuickAction {
 }
 
 const PAGE_ACTIONS: Record<string, QuickAction[]> = {
+  '/admin/students': [
+    { label: 'Register Student', icon: Plus, href: '/admin/students?action=new-student' },
+  ],
+  '/admin/agents': [
+    { label: 'New Agent', icon: UserPlus, href: '/admin/agents?action=new-agent' },
+  ],
+  '/admin/admins': [
+    { label: 'New Admin', icon: UserPlus, href: '/admin/admins?action=new-admin' },
+  ],
   '/admin/payments': [
     { label: 'New Payment', icon: CreditCard, href: '/admin/payments?action=new' },
   ],
   '/admin/users': [
-    { label: 'New Staff', icon: UserPlus, href: '/admin/users?action=new-staff' },
-    { label: 'New Student', icon: Plus, href: '/admin/users?action=new-student' },
+    { label: 'New Agent', icon: UserPlus, href: '/admin/agents?action=new-agent' },
+    { label: 'Register Student', icon: Plus, href: '/admin/students?action=new-student' },
   ],
   '/agent/call-records': [
     { label: 'New Call Record', icon: PhoneCall, href: '/agent/call-records?action=new' },

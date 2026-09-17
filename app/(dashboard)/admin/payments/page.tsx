@@ -1,22 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { AttributionBadge } from '@/components/shared/AttributionBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { AlertCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -102,7 +101,7 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col p-6">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Create Payment Record</DialogTitle>
+          <DialogTitle>Record Payment</DialogTitle>
           <DialogDescription>Attribution is resolved automatically based on call records.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-4 py-2 pr-1">
@@ -160,7 +159,7 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
         <DialogFooter className="gap-2 pt-3 border-t border-border/60 shrink-0">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={isLoading || success} id="submit-payment-btn">
-            {success ? '✓ Saved!' : isLoading ? 'Saving...' : 'Create Payment'}
+            {success ? '✓ Saved!' : isLoading ? 'Saving...' : 'Record Payment'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -212,8 +211,8 @@ function PaymentsContent() {
   }, [fetchPayments]);
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="Payments" description="Create and review payment records with automatic agent attribution" />
+    <div className="space-y-6">
+      <PageHeader title="Payments" description="Record and track student payments with automatic agent attribution" />
 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -222,7 +221,7 @@ function PaymentsContent() {
             placeholder="Search by mobile..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-8"
+            className="pl-8 h-9"
             id="payments-search"
           />
         </div>
@@ -230,7 +229,7 @@ function PaymentsContent() {
           type="month"
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value)}
-          className="w-40 h-8 text-sm"
+          className="w-40 h-9 text-sm"
           id="payments-month-filter"
         />
         <Button size="sm" onClick={() => setShowCreate(true)} id="create-payment-btn">
@@ -239,40 +238,47 @@ function PaymentsContent() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+      ) : payments.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">No payments found.</div>
       ) : (
-        <div className="space-y-2">
-          {payments.map((payment) => (
-            <Card key={payment._id}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm">Rs. {payment.amount.toLocaleString()}</span>
-                    <span className="text-xs text-muted-foreground">{payment.mobileNumber}</span>
-                    {payment.student && (
-                      <Badge variant="outline" className="text-xs">{payment.student.name}</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Mobile</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Attributed To</TableHead>
+                <TableHead className="text-right">Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.map((payment) => (
+                <TableRow key={payment._id}>
+                  <TableCell className="font-medium">
+                    {payment.student?.name ?? '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{payment.mobileNumber}</TableCell>
+                  <TableCell className="text-right font-medium">Rs. {payment.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(payment.paymentMonth).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
+                  </TableCell>
+                  <TableCell>
                     {payment.attributedAgent ? (
-                      <Badge variant="secondary" className="text-xs">→ {payment.attributedAgent.name}</Badge>
+                      <Badge variant="secondary" className="text-xs">{payment.attributedAgent.name}</Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">No attribution</span>
+                      <span className="text-xs text-muted-foreground">None</span>
                     )}
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(payment.paymentMonth).toLocaleDateString('en', { month: 'long', year: 'numeric' })}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground shrink-0">
-                  {format(new Date(payment.createdAt), 'dd MMM yyyy')}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {payments.length === 0 && (
-            <div className="text-center py-12 text-sm text-muted-foreground">No payments found.</div>
-          )}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground text-sm">
+                    {format(new Date(payment.createdAt), 'dd MMM yyyy')}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

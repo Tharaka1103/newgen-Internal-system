@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation';
 import connectDB from '@/lib/db/mongoose';
 import { CreditPoint } from '@/lib/db/models';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { StatCard } from '@/components/shared/StatCard';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -45,33 +46,45 @@ interface RankEntry {
   points: number;
 }
 
-function RankList({ data, currentAgentId }: { data: RankEntry[]; currentAgentId: string }) {
+function RankTable({ data, currentAgentId }: { data: RankEntry[]; currentAgentId: string }) {
   if (data.length === 0) {
-    return <div className="text-center py-10 text-sm text-muted-foreground">No data yet.</div>;
+    return <div className="text-center py-16 text-sm text-muted-foreground">No data yet.</div>;
   }
 
   return (
-    <div className="space-y-2">
-      {data.map((entry, index) => {
-        const isMe = entry.agentId.toString() === currentAgentId;
-        return (
-          <Card key={entry.agentId.toString()} className={isMe ? 'ring-1 ring-primary' : ''}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                {index === 0 ? (
-                  <Trophy className="h-5 w-5 text-chart-4" />
-                ) : (
-                  <span className="text-sm font-semibold text-muted-foreground">#{index + 1}</span>
-                )}
-              </div>
-              <span className="flex-1 text-sm font-medium">
-                {entry.agentName} {isMe && <Badge variant="outline" className="text-xs ml-1">You</Badge>}
-              </span>
-              <Badge variant="secondary" className="font-mono text-sm shrink-0">{entry.points} pts</Badge>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="border rounded-lg">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-16">Rank</TableHead>
+            <TableHead>Agent</TableHead>
+            <TableHead className="text-right">Points</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((entry, index) => {
+            const isMe = entry.agentId.toString() === currentAgentId;
+            return (
+              <TableRow key={entry.agentId.toString()} className={isMe ? 'bg-primary/5' : ''}>
+                <TableCell>
+                  {index === 0 ? (
+                    <Trophy className="h-4 w-4 text-chart-4" />
+                  ) : (
+                    <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {entry.agentName}
+                  {isMe && <Badge variant="outline" className="text-xs ml-2">You</Badge>}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant="secondary" className="font-mono text-xs">{entry.points} pts</Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -87,19 +100,19 @@ export default async function AgentLeaderboardPage() {
   const thisMonth = format(now, 'MMMM yyyy');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader title="Leaderboard" description="See how you rank among all agents" />
       <Tabs defaultValue="monthly">
         <TabsList>
           <TabsTrigger value="monthly" id="agent-monthly-tab">This Month</TabsTrigger>
           <TabsTrigger value="alltime" id="agent-alltime-tab">All Time</TabsTrigger>
         </TabsList>
-        <TabsContent value="monthly" className="mt-4">
-          <p className="text-xs text-muted-foreground mb-3">{thisMonth}</p>
-          <RankList data={monthly as RankEntry[]} currentAgentId={agentId} />
+        <TabsContent value="monthly" className="mt-5">
+          <p className="text-xs text-muted-foreground mb-4">{thisMonth}</p>
+          <RankTable data={monthly as RankEntry[]} currentAgentId={agentId} />
         </TabsContent>
-        <TabsContent value="alltime" className="mt-4">
-          <RankList data={allTime as RankEntry[]} currentAgentId={agentId} />
+        <TabsContent value="alltime" className="mt-5">
+          <RankTable data={allTime as RankEntry[]} currentAgentId={agentId} />
         </TabsContent>
       </Tabs>
     </div>

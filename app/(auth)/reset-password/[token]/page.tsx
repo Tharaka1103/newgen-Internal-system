@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -58,69 +57,72 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
 
   if (success) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center gap-3 py-4">
-            <CheckCircle2 className="h-10 w-10 text-chart-1" />
-            <h2 className="font-heading font-semibold text-lg">Password reset!</h2>
+      <div className="space-y-8">
+        <div className="flex flex-col items-center text-center gap-4 py-6">
+          <CheckCircle2 className="h-12 w-12 text-chart-1" />
+          <div className="space-y-2">
+            <h2 className="font-heading font-semibold text-2xl tracking-tight">Password reset!</h2>
             <p className="text-sm text-muted-foreground">
               Your password has been updated. Redirecting you to sign in...
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-xl font-heading">Set new password</CardTitle>
-        <CardDescription>Choose a strong password for your account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" id="reset-password-form">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-password">New Password</Label>
-            <Input
-              id="reset-password"
-              type="password"
-              placeholder="Min. 8 characters"
-              autoComplete="new-password"
-              {...register('password')}
-              disabled={isLoading}
-            />
-            {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-confirm-password">Confirm Password</Label>
-            <Input
-              id="reset-confirm-password"
-              type="password"
-              placeholder="Repeat new password"
-              autoComplete="new-password"
-              {...register('confirmPassword')}
-              disabled={isLoading}
-            />
-            {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading} id="reset-password-submit-btn">
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reset Password
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="justify-center">
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-heading font-semibold tracking-tight">Create new password</h2>
+        <p className="text-sm text-muted-foreground">Choose a strong password for your account</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" id="reset-password-form">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="reset-password">New Password</Label>
+          <Input
+            id="reset-password"
+            type="password"
+            placeholder="Min. 8 characters"
+            autoComplete="new-password"
+            {...register('password')}
+            disabled={isLoading}
+          />
+          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reset-confirm-password">Confirm Password</Label>
+          <Input
+            id="reset-confirm-password"
+            type="password"
+            placeholder="Repeat new password"
+            autoComplete="new-password"
+            {...register('confirmPassword')}
+            disabled={isLoading}
+          />
+          {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isLoading} id="reset-password-submit-btn">
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Reset Password
+        </Button>
+      </form>
+
+      <div className="text-center">
         <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
           Back to sign in
         </Link>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

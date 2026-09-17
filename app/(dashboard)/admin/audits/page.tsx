@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 
 interface AuditLogEntry {
   _id: string;
@@ -58,7 +60,6 @@ function getActionVariant(action: string): 'default' | 'secondary' | 'destructiv
 export default function AuditsPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -91,12 +92,12 @@ export default function AuditsPage() {
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="Audit Logs" description="Complete history of all system actions" />
+    <div className="space-y-6">
+      <PageHeader title="Activity Log" description="Complete history of all system actions" />
 
       <div className="flex items-center gap-3 flex-wrap">
         <Select value={actionFilter} onValueChange={(val) => setActionFilter(val ?? '')}>
-          <SelectTrigger className="h-8 text-sm w-44" id="audit-action-filter">
+          <SelectTrigger className="h-9 text-sm w-44" id="audit-action-filter">
             <SelectValue placeholder="All actions" />
           </SelectTrigger>
           <SelectContent>
@@ -107,7 +108,7 @@ export default function AuditsPage() {
           </SelectContent>
         </Select>
         <Select value={entityTypeFilter} onValueChange={(val) => setEntityTypeFilter(val ?? '')}>
-          <SelectTrigger className="h-8 text-sm w-36" id="audit-entity-filter">
+          <SelectTrigger className="h-9 text-sm w-36" id="audit-entity-filter">
             <SelectValue placeholder="All entities" />
           </SelectTrigger>
           <SelectContent>
@@ -117,55 +118,60 @@ export default function AuditsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 text-sm w-36" id="audit-date-from" placeholder="From" />
-        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 text-sm w-36" id="audit-date-to" placeholder="To" />
+        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 text-sm w-36" id="audit-date-from" placeholder="From" />
+        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 text-sm w-36" id="audit-date-to" placeholder="To" />
       </div>
 
-      <div className="space-y-2">
-        {isLoading ? (
-          [...Array(8)].map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)
-        ) : (
-          <>
-            {logs.map((log) => (
-              <Card key={log._id}>
-                <CardContent className="p-4 flex items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={getActionVariant(log.action)} className="text-xs">
-                        {ACTION_LABELS[log.action] ?? log.action}
-                      </Badge>
-                      <span className="text-sm font-medium">{log.actorName}</span>
-                      <Badge variant="outline" className="text-xs">{log.entityType}</Badge>
-                    </div>
-                    {(log.before || log.after) && (
-                      <div className="mt-1.5 text-xs font-mono text-muted-foreground truncate max-w-xl">
-                        {log.after ? JSON.stringify(log.after).slice(0, 100) : ''}
-                      </div>
-                    )}
-                    {log.ip && (
-                      <p className="text-xs text-muted-foreground mt-0.5">IP: {log.ip}</p>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground shrink-0 text-right">
-                    <p>{format(new Date(log.createdAt), 'dd MMM yyyy')}</p>
-                    <p>{format(new Date(log.createdAt), 'HH:mm:ss')}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {logs.length === 0 && (
-              <div className="text-center py-12 text-sm text-muted-foreground">No audit logs found.</div>
-            )}
-          </>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="space-y-2">{[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+      ) : logs.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">No activity logs found.</div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Action</TableHead>
+                <TableHead>Actor</TableHead>
+                <TableHead>Entity</TableHead>
+                <TableHead>IP</TableHead>
+                <TableHead className="text-right">Date & Time</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow key={log._id}>
+                  <TableCell>
+                    <Badge variant={getActionVariant(log.action)} className="text-xs">
+                      {ACTION_LABELS[log.action] ?? log.action}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">{log.actorName}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">{log.entityType}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{log.ip ?? '—'}</TableCell>
+                  <TableCell className="text-right text-muted-foreground text-sm">
+                    <div>{format(new Date(log.createdAt), 'dd MMM yyyy')}</div>
+                    <div className="text-xs">{format(new Date(log.createdAt), 'HH:mm:ss')}</div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>Page {page} of {totalPages} ({total} total)</span>
           <div className="flex gap-2">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="disabled:opacity-40">← Prev</button>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="disabled:opacity-40">Next →</button>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+              ← Prev
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+              Next →
+            </Button>
           </div>
         </div>
       )}

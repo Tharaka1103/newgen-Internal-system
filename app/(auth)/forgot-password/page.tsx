@@ -7,7 +7,6 @@ import { ForgotPasswordSchema, type ForgotPasswordInput } from '@/lib/validation
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -45,62 +44,64 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center gap-3 py-4">
-            <CheckCircle2 className="h-10 w-10 text-chart-1" />
-            <h2 className="font-heading font-semibold text-lg">Check your email</h2>
-            <p className="text-sm text-muted-foreground">
+      <div className="space-y-8">
+        <div className="flex flex-col items-center text-center gap-4 py-6">
+          <CheckCircle2 className="h-12 w-12 text-chart-1" />
+          <div className="space-y-2">
+            <h2 className="font-heading font-semibold text-2xl tracking-tight">Check your email</h2>
+            <p className="text-sm text-muted-foreground max-w-xs">
               If that email is registered, a password reset link has been sent. It expires in 1 hour.
             </p>
           </div>
-        </CardContent>
-        <CardFooter className="justify-center">
+        </div>
+        <div className="text-center">
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Back to sign in
           </Link>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-xl font-heading">Forgot password</CardTitle>
-        <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" id="forgot-password-form">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-1.5">
-            <Label htmlFor="forgot-email">Email</Label>
-            <Input
-              id="forgot-email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              {...register('email')}
-              disabled={isLoading}
-            />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading} id="forgot-password-submit-btn">
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Send Reset Link
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="justify-center">
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-heading font-semibold tracking-tight">Reset your password</h2>
+        <p className="text-sm text-muted-foreground">Enter your email and we'll send you a reset link</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" id="forgot-password-form">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="forgot-email">Email</Label>
+          <Input
+            id="forgot-email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            {...register('email')}
+            disabled={isLoading}
+          />
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isLoading} id="forgot-password-submit-btn">
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Send Reset Link
+        </Button>
+      </form>
+
+      <div className="text-center">
         <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
           Back to sign in
         </Link>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

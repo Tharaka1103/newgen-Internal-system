@@ -17,8 +17,9 @@ interface SearchResultItem {
 
 const STATIC_PAGES: Array<Omit<SearchResultItem, 'category'> & { category: 'Pages' }> = [
   { id: 'page-admin-dash', label: 'Admin Dashboard', href: '/admin/dashboard', description: 'Overview and core metrics', category: 'Pages' },
-  { id: 'page-users-staff', label: 'Staff Management', href: '/admin/users?tab=staff', description: 'Admins & Agents', category: 'Pages' },
-  { id: 'page-users-students', label: 'Student Directory', href: '/admin/users?tab=students', description: 'All enrolled students', category: 'Pages' },
+  { id: 'page-students', label: 'Student Directory', href: '/admin/students', description: 'Students from Grade 2 to A/L', category: 'Pages' },
+  { id: 'page-agents', label: 'Agents Management', href: '/admin/agents', description: 'Telemarketers & call center agents', category: 'Pages' },
+  { id: 'page-admins', label: 'Administrators', href: '/admin/admins', description: 'System administrative accounts', category: 'Pages' },
   { id: 'page-payments', label: 'Payments & Revenue', href: '/admin/payments', description: 'Student payments & verification', category: 'Pages' },
   { id: 'page-reports', label: 'Reports & Analytics', href: '/admin/reports', description: 'Performance and commissions', category: 'Pages' },
   { id: 'page-leaderboard', label: 'Leaderboard', href: '/admin/leaderboard', description: 'Top ranking agents', category: 'Pages' },
@@ -102,7 +103,7 @@ export function GlobalSearch() {
             fetchedStudents = sData.data.items.map((s: any) => ({
               id: `student-${s._id}`,
               label: s.name,
-              href: `/admin/users?tab=students&id=${s._id}`,
+              href: `/admin/students?search=${encodeURIComponent(s.mobileNumber)}`,
               description: `Mobile: ${s.mobileNumber} · Grade: ${s.grade}`,
               category: 'Students' as const,
             }));
@@ -115,7 +116,9 @@ export function GlobalSearch() {
             fetchedUsers = uData.data.items.map((u: any) => ({
               id: `user-${u._id}`,
               label: u.name,
-              href: `/admin/users?tab=staff&id=${u._id}`,
+              href: u.role === 'admin'
+                ? `/admin/admins?search=${encodeURIComponent(u.email)}`
+                : `/admin/agents?search=${encodeURIComponent(u.email)}`,
               description: `${u.email} · ${u.role}`,
               category: 'Staff' as const,
             }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,7 +90,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
       <PageHeader title="Settings" description="System configuration and admin-controlled values" />
 
       {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
@@ -104,9 +104,12 @@ export default function SettingsPage() {
         </TabsList>
 
         {/* ── General ──────────────────────────────────────────────── */}
-        <TabsContent value="general" className="mt-4 space-y-4">
+        <TabsContent value="general" className="mt-5 space-y-5">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Branding</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm">Branding</CardTitle>
+              <CardDescription className="text-xs">Your organization name and logo</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="setting-company-name">Company Name</Label>
@@ -124,9 +127,12 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* ── Commission ────────────────────────────────────────────── */}
-        <TabsContent value="commission" className="mt-4 space-y-4">
+        <TabsContent value="commission" className="mt-5 space-y-5">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Reward Configuration</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm">Reward Configuration</CardTitle>
+              <CardDescription className="text-xs">How agents earn loyalty points and credit points</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="setting-loyalty-per-reg">Loyalty Points Per New Registration (Rs.)</Label>
@@ -159,9 +165,12 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* ── Security ──────────────────────────────────────────────── */}
-        <TabsContent value="security" className="mt-4 space-y-4">
+        <TabsContent value="security" className="mt-5 space-y-5">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Session &amp; Login</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm">Session &amp; Login</CardTitle>
+              <CardDescription className="text-xs">Controls for login attempts and session duration</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="setting-session-timeout">Session Timeout (Minutes)</Label>
@@ -178,7 +187,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-sm">Password Policy</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm">Password Policy</CardTitle>
+              <CardDescription className="text-xs">Minimum requirements for user passwords</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="setting-pwd-min-length">Minimum Password Length</Label>
@@ -204,11 +216,11 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* ── SMTP ──────────────────────────────────────────────────── */}
-        <TabsContent value="smtp" className="mt-4 space-y-4">
+        <TabsContent value="smtp" className="mt-5 space-y-5">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">SMTP Configuration</CardTitle>
-              <CardDescription className="text-xs">For sending password reset emails.</CardDescription>
+              <CardDescription className="text-xs">Email server settings for password reset emails</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">

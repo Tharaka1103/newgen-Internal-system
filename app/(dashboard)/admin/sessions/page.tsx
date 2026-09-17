@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SessionEntry {
@@ -45,10 +47,10 @@ export default function SessionsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Active Sessions"
-        description="View and revoke active user sessions"
+        description="View who's logged in and revoke access if needed"
         actions={
           <Button variant="outline" size="sm" onClick={fetchSessions} id="refresh-sessions-btn">
             Refresh
@@ -57,58 +59,65 @@ export default function SessionsPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+      ) : sessions.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">No active sessions found.</div>
       ) : (
-        <div className="space-y-2">
-          {sessions.map((s) => (
-            <Card key={s.sessionToken}>
-              <CardContent className="p-4 flex items-start gap-4">
-                <Shield className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{s.userName}</span>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>IP</TableHead>
+                <TableHead>Last Seen</TableHead>
+                <TableHead className="w-16"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.map((s) => (
+                <TableRow key={s.sessionToken}>
+                  <TableCell className="font-medium">{s.userName}</TableCell>
+                  <TableCell>
                     <Badge variant={s.userRole === 'admin' ? 'default' : 'secondary'} className="text-xs capitalize">
                       {s.userRole}
                     </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{s.userEmail}</p>
-                  {s.ip && <p className="text-xs text-muted-foreground">IP: {s.ip}</p>}
-                  {s.userAgent && (
-                    <p className="text-xs text-muted-foreground truncate max-w-sm">{s.userAgent}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Last seen {formatDistanceToNow(new Date(s.lastSeen), { addSuffix: true })}
-                  </p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger
-                    render={
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Revoke session">
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    }
-                  />
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Revoke Session</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will log out {s.userName} immediately. They'll need to sign in again.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => revokeSession(s.userId, s.sessionToken)}>
-                        Revoke
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
-          ))}
-          {sessions.length === 0 && (
-            <div className="text-center py-12 text-sm text-muted-foreground">No active sessions found.</div>
-          )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{s.userEmail}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{s.ip ?? '—'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatDistanceToNow(new Date(s.lastSeen), { addSuffix: true })}
+                  </TableCell>
+                  <TableCell>
+                    <AlertDialog>
+                      <AlertDialogTrigger
+                        render={
+                          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Revoke session">
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                      />
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Revoke Session</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will log out {s.userName} immediately. They'll need to sign in again.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => revokeSession(s.userId, s.sessionToken)}>
+                            Revoke
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

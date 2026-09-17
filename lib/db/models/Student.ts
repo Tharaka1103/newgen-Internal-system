@@ -20,7 +20,11 @@ const StudentSchema = new Schema<IStudent>(
     mobileNumber: { type: String, required: true, trim: true },
     grade: {
       type: String,
-      enum: ['grade_6', 'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11', 'o_level', 'a_level'],
+      enum: [
+        'grade_2', 'grade_3', 'grade_4', 'grade_5',
+        'grade_6', 'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11',
+        'o_level', 'a_level'
+      ],
       required: true,
     },
     registrationDate: { type: Date, required: true, default: Date.now },

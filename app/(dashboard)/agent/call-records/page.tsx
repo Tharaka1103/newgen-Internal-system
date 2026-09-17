@@ -8,19 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Phone, Plus } from 'lucide-react';
+import { AlertCircle, Phone } from 'lucide-react';
 import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface CallRecord {
   _id: string;
@@ -30,11 +31,6 @@ interface CallRecord {
   outcome: string;
   notes?: string;
   createdAt: string;
-}
-
-interface ClaimInfo {
-  balance: number;
-  pendingClaim: boolean;
 }
 
 // New Call Record Form
@@ -252,7 +248,7 @@ function CallRecordsContent() {
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Call Records"
         description="Log and review your cold-calling activity"
@@ -270,36 +266,51 @@ function CallRecordsContent() {
       />
 
       {isLoading ? (
-        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+      ) : records.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          No call records yet. Click "New Call" to log your first call.
+        </div>
       ) : (
-        <div className="space-y-2">
-          {records.map((record) => (
-            <Card key={record._id}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{record.mobileNumber}</span>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Mobile</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead>Outcome</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead className="hidden sm:table-cell">Notes</TableHead>
+                <TableHead className="text-right">Logged</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((record) => (
+                <TableRow key={record._id}>
+                  <TableCell className="font-medium">{record.mobileNumber}</TableCell>
+                  <TableCell>
                     <Badge variant="outline" className="text-xs">
                       {GRADE_OPTIONS.find((g) => g.value === record.grade)?.label}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge variant={OUTCOME_COLORS[record.outcome] ?? 'outline'} className="text-xs capitalize">
                       {CALL_OUTCOMES.find((o) => o.value === record.outcome)?.label}
                     </Badge>
-                  </div>
-                  {record.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{record.notes}</p>}
-                </div>
-                <div className="text-xs text-muted-foreground shrink-0 text-right">
-                  <p>{new Date(record.month).toLocaleDateString('en', { month: 'short', year: 'numeric' })}</p>
-                  <p>{formatDistanceToNow(new Date(record.createdAt), { addSuffix: true })}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {records.length === 0 && (
-            <div className="text-center py-12 text-sm text-muted-foreground">
-              No call records yet. Click "New Call" to log your first call.
-            </div>
-          )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {new Date(record.month).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
+                    {record.notes || '—'}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground text-sm">
+                    {formatDistanceToNow(new Date(record.createdAt), { addSuffix: true })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

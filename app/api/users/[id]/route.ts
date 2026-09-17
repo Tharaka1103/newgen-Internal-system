@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/permissions';
 import { UpdateUserSchema } from '@/lib/validations/user';
 import { writeAuditLog, extractRequestMeta } from '@/lib/services/audit.service';
 import { grantPermissions, revokePermissions, setPermissions } from '@/lib/services/permission.service';
+import bcrypt from 'bcryptjs';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -50,6 +51,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (parsed.data.name) user.name = parsed.data.name;
     if (parsed.data.email) user.email = parsed.data.email.toLowerCase();
     if (parsed.data.status) user.status = parsed.data.status;
+    if (parsed.data.password) {
+      user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    }
     if (parsed.data.permissions !== undefined) {
       await setPermissions(user._id, parsed.data.permissions as never[]);
     }
@@ -76,6 +80,54 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ success: true, data: { id: user._id } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update user';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    const session = await requireAdmin();
+    const currentUser = session.user as any;
+
+    if (id === currentUser.id) {
+      return NextResponse.json(
+        { success: false, error: 'You cannot delete your own account.' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const user = await User.findById(id);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const before = {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    };
+
+    await User.findByIdAndDelete(id);
+
+    const { ip, userAgent } = extractRequestMeta(request);
+    await writeAuditLog({
+      actor: currentUser.id,
+      actorName: currentUser.name ?? 'Admin',
+      action: 'user.delete',
+      entityType: 'User',
+      entityId: id as any,
+      before,
+      ip,
+      userAgent,
+    });
+
+    return NextResponse.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete user';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

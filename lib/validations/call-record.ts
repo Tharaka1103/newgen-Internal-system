@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-const GRADE_VALUES = ['grade_6', 'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11', 'o_level', 'a_level'] as const;
+const GRADE_VALUES = [
+  'grade_2', 'grade_3', 'grade_4', 'grade_5',
+  'grade_6', 'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11',
+  'o_level', 'a_level'
+] as const;
 const OUTCOME_VALUES = ['interested', 'not_interested', 'call_back_later', 'no_answer'] as const;
 
 export const CreateCallRecordSchema = z.object({

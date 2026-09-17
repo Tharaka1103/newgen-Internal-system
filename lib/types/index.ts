@@ -12,9 +12,11 @@ export const Permission = {
   USERS_CREATE: 'users.create',
   USERS_EDIT: 'users.edit',
   USERS_DISABLE: 'users.disable',
+  USERS_DELETE: 'users.delete',
   STUDENTS_VIEW: 'students.view',
   STUDENTS_CREATE: 'students.create',
   STUDENTS_EDIT: 'students.edit',
+  STUDENTS_DELETE: 'students.delete',
   PAYMENTS_VIEW: 'payments.view',
   PAYMENTS_CREATE: 'payments.create',
   CALL_RECORDS_VIEW: 'call_records.view',
@@ -63,10 +65,15 @@ export const CALL_OUTCOMES: { value: CallOutcome; label: string }[] = [
 
 // ── Grade Options (Sri Lankan curriculum) ─────────────────────
 export type Grade =
+  | 'grade_2' | 'grade_3' | 'grade_4' | 'grade_5'
   | 'grade_6' | 'grade_7' | 'grade_8' | 'grade_9' | 'grade_10' | 'grade_11'
   | 'o_level' | 'a_level';
 
 export const GRADE_OPTIONS: { value: Grade; label: string }[] = [
+  { value: 'grade_2', label: 'Grade 2' },
+  { value: 'grade_3', label: 'Grade 3' },
+  { value: 'grade_4', label: 'Grade 4' },
+  { value: 'grade_5', label: 'Grade 5' },
   { value: 'grade_6', label: 'Grade 6' },
   { value: 'grade_7', label: 'Grade 7' },
   { value: 'grade_8', label: 'Grade 8' },
@@ -88,9 +95,9 @@ export type CreditPointSource = 'registration_match' | 'payment_match';
 
 // ── Audit Log ─────────────────────────────────────────────────
 export type AuditAction =
-  | 'user.create' | 'user.update' | 'user.disable' | 'user.enable'
+  | 'user.create' | 'user.update' | 'user.disable' | 'user.enable' | 'user.delete'
   | 'user.permission.grant' | 'user.permission.revoke'
-  | 'student.create' | 'student.update'
+  | 'student.create' | 'student.update' | 'student.delete'
   | 'call_record.create' | 'call_record.admin_correct'
   | 'payment.create'
   | 'claim.submit' | 'claim.approve' | 'claim.reject'
