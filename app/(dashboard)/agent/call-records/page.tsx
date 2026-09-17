@@ -23,6 +23,7 @@ import { AlertCircle, Phone } from 'lucide-react';
 import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
+import { cachedFetch, invalidateClientCache } from '@/lib/utils/cachedFetch';
 
 interface CallRecord {
   _id: string;
@@ -63,6 +64,7 @@ function NewCallRecordDialog({ open, onClose }: { open: boolean; onClose: () => 
       });
       const data = await res.json();
       if (data.success) {
+        invalidateClientCache('/api/call-records');
         setSuccess(true);
         setTimeout(() => { setSuccess(false); onClose(); }, 1500);
       } else {
@@ -235,20 +237,23 @@ function CallRecordsContent() {
   };
 
   const fetchRecords = useCallback(async () => {
-    setIsLoading(true);
     try {
       const [recordsRes, claimsRes] = await Promise.all([
-        fetch(`/api/call-records?page=${page}&limit=20`),
-        fetch('/api/claims?limit=1'),
+        cachedFetch(`/api/call-records?page=${page}&limit=20`),
+        cachedFetch('/api/claims?limit=1'),
       ]);
-      const [recordsData, claimsData] = await Promise.all([recordsRes.json(), claimsRes.json()]);
-      if (recordsData.success) {
+      const recordsData = recordsRes.data;
+      const claimsData = claimsRes.data;
+      if (recordsData?.success) {
         setRecords(recordsData.data.items || []);
         setTotalPages(recordsData.data.totalPages || 1);
         setTotalCount(recordsData.data.total || 0);
       }
-      if (claimsData.success) setBalance(claimsData.data.balance ?? 0);
-    } finally {
+      if (claimsData?.success) setBalance(claimsData.data.balance ?? 0);
+      if (!recordsRes.isStale) {
+        setIsLoading(false);
+      }
+    } catch {
       setIsLoading(false);
     }
   }, [page]);

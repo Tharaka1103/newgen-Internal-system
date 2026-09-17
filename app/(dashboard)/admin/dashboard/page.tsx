@@ -23,9 +23,11 @@ import {
   TrendingUp, ArrowRight, DollarSign, Clock, CheckCircle2, PhoneCall, Wallet,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getCachedOrFetch } from '@/lib/cache/memCache';
 
 async function getDashboardData() {
-  await connectDB();
+  return getCachedOrFetch('admin_dashboard_metrics', 30, async () => {
+    await connectDB();
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
@@ -106,6 +108,7 @@ async function getDashboardData() {
     mediumDistribution,
     recentStudents,
   };
+  });
 }
 
 export default async function AdminDashboardPage() {

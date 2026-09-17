@@ -46,6 +46,9 @@ const CallRecordSchema = new Schema<ICallRecord>(
 // Core business constraint: one call record per (mobileNumber, month) across ALL agents
 CallRecordSchema.index({ mobileNumber: 1, month: 1 }, { unique: true });
 CallRecordSchema.index({ agent: 1, month: -1 });
+CallRecordSchema.index({ agent: 1, createdAt: -1 });
+CallRecordSchema.index({ createdAt: -1 });
+CallRecordSchema.index({ month: 1, outcome: 1 });
 CallRecordSchema.index({ mobileNumber: 1, month: -1 }); // for matching fallback query
 
 const CallRecord: Model<ICallRecord> =

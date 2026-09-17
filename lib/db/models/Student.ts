@@ -44,6 +44,9 @@ const StudentSchema = new Schema<IStudent>(
 StudentSchema.index({ mobileNumber: 1 }, { unique: true });
 StudentSchema.index({ grade: 1, status: 1 });
 StudentSchema.index({ registrationDate: -1 });
+StudentSchema.index({ name: 1, status: 1 });
+StudentSchema.index({ createdAt: -1 });
+StudentSchema.index({ registrationDate: -1, grade: 1 });
 
 // Ensure cached model matches the updated schema (vital for Next.js hot module reloading)
 if (mongoose.models.Student && !mongoose.models.Student.schema?.path('medium')) {

@@ -105,7 +105,14 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, stale-while-revalidate=30',
+        },
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to generate report';
     return NextResponse.json({ success: false, error: message }, { status: 403 });

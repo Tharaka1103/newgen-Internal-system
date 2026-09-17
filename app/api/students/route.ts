@@ -32,10 +32,17 @@ export async function GET(request: Request) {
       Student.countDocuments(query),
     ]);
 
-    return NextResponse.json({
-      success: true,
-      data: { items: students, total, page, totalPages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: { items: students, total, page, totalPages: Math.ceil(total / limit) },
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch students';
     return NextResponse.json({ success: false, error: message }, { status: 403 });

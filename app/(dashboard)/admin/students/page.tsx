@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { GRADE_OPTIONS, Grade } from '@/lib/types';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
+import { cachedFetch, invalidateClientCache } from '@/lib/utils/cachedFetch';
 
 interface Student {
   _id: string;
@@ -82,23 +83,24 @@ function StudentsManagementContent() {
   };
 
   const fetchStudents = useCallback(async () => {
-    setIsLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '25' });
       if (search) params.set('search', search);
       if (gradeFilter && gradeFilter !== 'ALL') params.set('grade', gradeFilter);
       if (statusFilter && statusFilter !== 'ALL') params.set('status', statusFilter);
 
-      const res = await fetch(`/api/students?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
+      const url = `/api/students?${params.toString()}`;
+      const { data, isStale } = await cachedFetch(url);
+      if (data?.success) {
         setStudents(data.data.items || []);
         setTotalPages(data.data.totalPages || 1);
         setTotalCount(data.data.total || 0);
       }
+      if (!isStale) {
+        setIsLoading(false);
+      }
     } catch {
       // ignore
-    } finally {
       setIsLoading(false);
     }
   }, [search, gradeFilter, statusFilter, page]);
@@ -117,6 +119,7 @@ function StudentsManagementContent() {
       });
       const data = await res.json();
       if (data.success) {
+        invalidateClientCache('/api/students');
         setDeletingStudent(null);
         fetchStudents();
       } else {
@@ -432,6 +435,7 @@ function CreateStudentDialog({ open, onClose }: { open: boolean; onClose: () => 
       });
       const data = await res.json();
       if (data.success) {
+        invalidateClientCache('/api/students');
         setFormData({ name: '', mobileNumber: '', grade: '', medium: 'sinhala' });
         onClose();
       } else {
@@ -587,6 +591,7 @@ function EditStudentDialog({
       });
       const data = await res.json();
       if (data.success) {
+        invalidateClientCache('/api/students');
         setSaved(true);
         setTimeout(() => {
           onClose();

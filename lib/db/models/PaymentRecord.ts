@@ -29,6 +29,9 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
 
 PaymentRecordSchema.index({ student: 1, paymentMonth: -1 });
 PaymentRecordSchema.index({ attributedAgent: 1, paymentMonth: -1 });
+PaymentRecordSchema.index({ paymentMonth: -1, createdAt: -1 });
+PaymentRecordSchema.index({ paymentMonth: -1, attributedAgent: 1 });
+PaymentRecordSchema.index({ createdAt: -1 });
 PaymentRecordSchema.index({ mobileNumber: 1 });
 
 const PaymentRecord: Model<IPaymentRecord> =

@@ -9,7 +9,14 @@ export async function GET(request: Request) {
   try {
     await requirePermission(Permission.SETTINGS_GENERAL);
     const settings = await getAllSettings();
-    return NextResponse.json({ success: true, data: settings });
+    return NextResponse.json(
+      { success: true, data: settings },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch settings';
     return NextResponse.json({ success: false, error: message }, { status: 403 });

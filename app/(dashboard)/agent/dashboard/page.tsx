@@ -18,9 +18,11 @@ import {
   PhoneCall, Wallet, Trophy, History, Award, Sparkles, Target, ArrowRight, Clock,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { getCachedOrFetch } from '@/lib/cache/memCache';
 
 async function getAgentDashboardData(agentId: string) {
-  await connectDB();
+  return getCachedOrFetch(`agent_dashboard_${agentId}`, 30, async () => {
+    await connectDB();
   const agentObjectId = new mongoose.Types.ObjectId(agentId);
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -133,6 +135,7 @@ async function getAgentDashboardData(agentId: string) {
     outcomesDistribution,
     totalLifetimeCalls,
   };
+  });
 }
 
 export default async function AgentDashboardPage() {

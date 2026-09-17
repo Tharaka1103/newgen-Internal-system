@@ -48,6 +48,7 @@ const ClaimRequestSchema = new Schema<IClaimRequest>(
 
 ClaimRequestSchema.index({ agent: 1, status: 1 });
 ClaimRequestSchema.index({ status: 1, createdAt: -1 });
+ClaimRequestSchema.index({ createdAt: -1 });
 
 const ClaimRequest: Model<IClaimRequest> =
   mongoose.models.ClaimRequest || mongoose.model<IClaimRequest>('ClaimRequest', ClaimRequestSchema);

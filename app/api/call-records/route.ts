@@ -52,10 +52,17 @@ export async function GET(request: Request) {
       CallRecord.countDocuments(query),
     ]);
 
-    return NextResponse.json({
-      success: true,
-      data: { items: records, total, page, totalPages: Math.ceil(total / limit) },
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: { items: records, total, page, totalPages: Math.ceil(total / limit) },
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch call records';
     return NextResponse.json({ success: false, error: message }, { status: 403 });

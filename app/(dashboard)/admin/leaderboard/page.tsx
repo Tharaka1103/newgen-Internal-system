@@ -13,6 +13,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Trophy, PhoneCall, Award, Medal, Sparkles, TrendingUp, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { cachedFetch } from '@/lib/utils/cachedFetch';
 
 interface AgentRank {
   agentName: string;
@@ -28,23 +29,20 @@ export default function LeaderboardPage() {
   const [monthlyData, setMonthlyData] = useState<AgentRank[]>([]);
   const [allTimeData, setAllTimeData] = useState<AgentRank[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Top toggle options: 'success_calls' (default) vs 'points'
-  const [rankingMetric, setRankingMetric] = useState<RankingMetric>('success_calls');
   const [timeRange, setTimeRange] = useState<'monthly' | 'alltime'>('monthly');
+  const [rankingMetric, setRankingMetric] = useState<RankingMetric>('success_calls');
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   useEffect(() => {
-    setIsLoading(true);
     Promise.all([
-      fetch(`/api/reports?type=agent_performance&startMonth=${thisMonth}&endMonth=${thisMonth}`).then((r) => r.json()),
-      fetch('/api/reports?type=agent_performance').then((r) => r.json()),
+      cachedFetch(`/api/reports?type=agent_performance&startMonth=${thisMonth}&endMonth=${thisMonth}`).then((r) => r.data),
+      cachedFetch('/api/reports?type=agent_performance').then((r) => r.data),
     ])
       .then(([monthlyRes, allTimeRes]) => {
-        if (monthlyRes.success) setMonthlyData(monthlyRes.data || []);
-        if (allTimeRes.success) setAllTimeData(allTimeRes.data || []);
+        if (monthlyRes?.success) setMonthlyData(monthlyRes.data || []);
+        if (allTimeRes?.success) setAllTimeData(allTimeRes.data || []);
       })
       .finally(() => setIsLoading(false));
   }, [thisMonth]);

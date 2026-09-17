@@ -19,6 +19,7 @@ import {
 import { AlertCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
+import { cachedFetch, invalidateClientCache } from '@/lib/utils/cachedFetch';
 
 interface PaymentRecord {
   _id: string;
@@ -111,6 +112,7 @@ function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => 
       });
       const data = await res.json();
       if (data.success) {
+        invalidateClientCache('/api/payments');
         setSuccess(true);
         setTimeout(() => {
           setSuccess(false);
@@ -301,19 +303,21 @@ function PaymentsContent() {
   };
 
   const fetchPayments = useCallback(async () => {
-    setIsLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (search) params.set('search', search);
       if (monthFilter) params.set('month', monthFilter);
-      const res = await fetch(`/api/payments?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
+      const url = `/api/payments?${params.toString()}`;
+      const { data, isStale } = await cachedFetch(url);
+      if (data?.success) {
         setPayments(data.data.items || []);
         setTotalPages(data.data.totalPages || 1);
         setTotalCount(data.data.total || 0);
       }
-    } finally {
+      if (!isStale) {
+        setIsLoading(false);
+      }
+    } catch {
       setIsLoading(false);
     }
   }, [search, monthFilter, page]);

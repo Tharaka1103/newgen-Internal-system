@@ -142,17 +142,24 @@ export async function GET(request: Request) {
       balance = await getLoyaltyBalance(currentUser.id);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        items: claims,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-        balance,
-        stats: currentUser.role !== 'agent' ? stats : undefined,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          items: claims,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit),
+          balance,
+          stats: currentUser.role !== 'agent' ? stats : undefined,
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch claims';
     return NextResponse.json({ success: false, error: message }, { status: 403 });
