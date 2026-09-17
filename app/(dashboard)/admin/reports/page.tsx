@@ -20,10 +20,10 @@ import {
 } from 'recharts';
 
 const chartConfig = {
-  count: { label: 'Count', color: 'var(--chart-1)' },
-  totalAmount: { label: 'Amount (Rs.)', color: 'var(--chart-2)' },
-  totalPaid: { label: 'Paid Out (Rs.)', color: 'var(--chart-3)' },
-  totalPoints: { label: 'Credit Points', color: 'var(--chart-1)' },
+  count: { label: 'Count', color: '#2563eb' },
+  totalAmount: { label: 'Amount (Rs.)', color: '#10b981' },
+  totalPaid: { label: 'Paid Out (Rs.)', color: '#f59e0b' },
+  totalPoints: { label: 'Credit Points', color: '#8b5cf6' },
 };
 
 function downloadCSV(url: string, filename: string) {
@@ -152,7 +152,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" fill="#2563eb" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ChartContainer>
             </CardContent>
@@ -177,7 +177,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="totalAmount" fill="var(--chart-2)" radius={[3, 3, 0, 0]} name="Rs. Amount" />
+                  <Bar dataKey="totalAmount" fill="#10b981" radius={[3, 3, 0, 0]} name="Rs. Amount" />
                 </BarChart>
               </ChartContainer>
             </CardContent>
@@ -202,7 +202,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line dataKey="totalPaid" stroke="var(--chart-3)" strokeWidth={2} dot={false} name="Paid Out (Rs.)" />
+                  <Line dataKey="totalPaid" stroke="#f59e0b" strokeWidth={2} dot={false} name="Paid Out (Rs.)" />
                 </LineChart>
               </ChartContainer>
             </CardContent>

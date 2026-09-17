@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
 import { Student, PaymentRecord, CreditPoint, ClaimRequest, CallRecord, MonthlyTarget } from '@/lib/db/models';
-import { requirePermission } from '@/lib/auth/permissions';
+import { requirePermission, requireAuth } from '@/lib/auth/permissions';
+import { hasPermission } from '@/lib/services/permission.service';
 import {
   getAgentPerformanceReport,
   getRegistrationsOverTime,
@@ -13,11 +14,25 @@ import { Permission } from '@/lib/types';
 
 export async function GET(request: Request) {
   try {
-    await requirePermission(Permission.REPORTS_VIEW);
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'summary';
+
+    if (type === 'agent_performance') {
+      const session = await requireAuth();
+      const allowed =
+        (await hasPermission(session.user.id, Permission.LEADERBOARD_VIEW)) ||
+        (await hasPermission(session.user.id, Permission.REPORTS_VIEW));
+      if (!allowed) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: You do not have permission to view leaderboard rankings.' },
+          { status: 403 }
+        );
+      }
+    } else {
+      await requirePermission(Permission.REPORTS_VIEW);
+    }
+
+    await connectDB();
     const startMonth = searchParams.get('startMonth') ?? undefined;
     const endMonth = searchParams.get('endMonth') ?? undefined;
     const agentId = searchParams.get('agentId') ?? undefined;

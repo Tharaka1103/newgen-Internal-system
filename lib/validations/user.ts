@@ -53,8 +53,15 @@ export const RevokePermissionSchema = z.object({
   permissions: z.array(z.string()).min(1),
 });
 
+export const UpdateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().email('Invalid email address'),
+});
+
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;

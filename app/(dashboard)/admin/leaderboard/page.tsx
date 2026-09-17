@@ -79,13 +79,15 @@ export default function LeaderboardPage() {
   const chartConfig = {
     successCalls: {
       label: 'Success Calls',
-      color: 'hsl(var(--primary))',
+      color: '#0284c7',
     },
     points: {
       label: 'Points',
-      color: 'hsl(var(--chart-2))',
+      color: '#f59e0b',
     },
   };
+
+  const chartColor = rankingMetric === 'success_calls' ? '#0284c7' : '#f59e0b';
 
   return (
     <div className="space-y-6">
@@ -111,13 +113,12 @@ export default function LeaderboardPage() {
         <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-0.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Ranking Metric
             </span>
             <p className="text-sm font-medium text-foreground">
               {rankingMetric === 'success_calls'
-                ? 'Ranking telemarketers by number of newly registered students (Success Calls)'
-                : 'Ranking telemarketers by total commission reward points earned'}
+                ? 'Ranking agents by number of newly registered students (Success Calls)'
+                : 'Ranking agents by total commission reward points earned'}
             </p>
           </div>
 
@@ -311,7 +312,7 @@ export default function LeaderboardPage() {
                       Visual distribution of {rankingMetric === 'success_calls' ? 'successful student calls' : 'commission points'} across leading agents
                     </CardDescription>
                   </div>
-                  <Badge variant="outline" className="text-xs capitalize">
+                  <Badge variant="outline" className="text-xs capitalize font-medium">
                     {rankingMetric === 'success_calls' ? 'Success Calls' : 'Points'}
                   </Badge>
                 </div>
@@ -321,11 +322,11 @@ export default function LeaderboardPage() {
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={chartColor} stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15} />
                     <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -333,8 +334,8 @@ export default function LeaderboardPage() {
                       type="monotone"
                       dataKey={rankingMetric === 'success_calls' ? 'successCalls' : 'points'}
                       name={rankingMetric === 'success_calls' ? 'Success Calls' : 'Points'}
-                      stroke="var(--primary)"
-                      strokeWidth={2}
+                      stroke={chartColor}
+                      strokeWidth={2.5}
                       fill="url(#areaGradient)"
                     />
                   </AreaChart>
@@ -349,19 +350,17 @@ export default function LeaderboardPage() {
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="w-16 font-semibold">Rank</TableHead>
-                  <TableHead className="font-semibold">Telemarketing Agent</TableHead>
+                  <TableHead className="font-semibold">Agent</TableHead>
                   <TableHead
-                    className={`text-right font-semibold ${
-                      rankingMetric === 'success_calls' ? 'text-primary' : ''
-                    }`}
+                    className={`text-right font-semibold ${rankingMetric === 'success_calls' ? 'text-primary' : ''
+                      }`}
                   >
                     Success Calls (Registered)
                   </TableHead>
                   <TableHead className="text-right font-semibold">Paid Enrolments</TableHead>
                   <TableHead
-                    className={`text-right font-semibold pr-6 ${
-                      rankingMetric === 'points' ? 'text-primary' : ''
-                    }`}
+                    className={`text-right font-semibold pr-6 ${rankingMetric === 'points' ? 'text-primary' : ''
+                      }`}
                   >
                     Total Points
                   </TableHead>
@@ -408,11 +407,10 @@ export default function LeaderboardPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <span
-                          className={`text-sm font-semibold ${
-                            rankingMetric === 'success_calls'
+                          className={`text-sm font-semibold ${rankingMetric === 'success_calls'
                               ? 'text-primary font-bold'
                               : 'text-foreground'
-                          }`}
+                            }`}
                         >
                           {agent.registrationMatches}
                         </span>

@@ -18,9 +18,10 @@ interface SearchResultItem {
 const STATIC_PAGES: Array<Omit<SearchResultItem, 'category'> & { category: 'Pages' }> = [
   { id: 'page-admin-dash', label: 'Admin Dashboard', href: '/admin/dashboard', description: 'Overview and core metrics', category: 'Pages' },
   { id: 'page-students', label: 'Student Directory', href: '/admin/students', description: 'Students from Grade 2 to A/L', category: 'Pages' },
-  { id: 'page-agents', label: 'Agents Management', href: '/admin/agents', description: 'Telemarketers & call center agents', category: 'Pages' },
+  { id: 'page-agents', label: 'Agents Management', href: '/admin/agents', description: 'Call center and outreach agents', category: 'Pages' },
   { id: 'page-admins', label: 'Administrators', href: '/admin/admins', description: 'System administrative accounts', category: 'Pages' },
   { id: 'page-payments', label: 'Payments & Revenue', href: '/admin/payments', description: 'Student payments & verification', category: 'Pages' },
+  { id: 'page-claims', label: 'Loyalty Claims', href: '/admin/claims', description: 'Agent cash claims & payout history', category: 'Pages' },
   { id: 'page-reports', label: 'Reports & Analytics', href: '/admin/reports', description: 'Performance and commissions', category: 'Pages' },
   { id: 'page-leaderboard', label: 'Leaderboard', href: '/admin/leaderboard', description: 'Top ranking agents', category: 'Pages' },
   { id: 'page-audits', label: 'Audit Logs', href: '/admin/audits', description: 'System-wide activity logs', category: 'Pages' },

@@ -147,8 +147,8 @@ function AgentsManagementContent() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
-          title="Telemarketers & Field Agents"
-          description={`Manage call center agents, assign granular access permissions, and track status (${totalCount} total agents)`}
+          title="Agents"
+          description={`Manage agents, assign granular access permissions, and track status (${totalCount} total agents)`}
         />
         <Button onClick={() => setShowCreateDialog(true)} id="create-agent-btn" className="self-start sm:self-center">
           <UserPlus className="h-4 w-4 mr-2" />
@@ -219,7 +219,7 @@ function AgentsManagementContent() {
           <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
             {search || statusFilter !== 'ALL'
               ? 'Try adjusting your search criteria.'
-              : 'Add your first telemarketing agent to start logging calls and assigning leads.'}
+              : 'Add your first agent to start logging calls and assigning leads.'}
           </p>
           <Button
             size="sm"
@@ -419,7 +419,7 @@ function CreateAgentDialog({ open, onClose }: { open: boolean; onClose: () => vo
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Headphones className="h-5 w-5 text-primary" />
-            Create Telemarketing Agent
+            Create Agent
           </DialogTitle>
           <DialogDescription>
             Add a new agent account and configure their system access permissions.

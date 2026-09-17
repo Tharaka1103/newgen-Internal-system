@@ -41,13 +41,13 @@ const TOUR_STEPS: TourStep[] = [
   {
     step: 1,
     title: 'Welcome to Newgen Internal System',
-    tagline: 'Streamlined telemarketing, student management & automated attributions',
+    tagline: 'Streamlined student outreach, enrollment management & automated attributions',
     icon: Sparkles,
     description:
       'This system is specifically built to unify student enrollments, call center operations, fee payments, and automated commission tracking in one clean platform.',
     keyPoints: [
       'Role-based access separating Administrator control from Agent portals',
-      'Instant mobile-number matching linking telemarketing calls to fee payments',
+      'Instant mobile-number matching linking agent calls to fee payments',
       'Automated commission points and live leaderboards for staff motivation',
     ],
   },
@@ -71,11 +71,11 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     step: 3,
-    title: 'Telemarketing Agents & Permissions',
+    title: 'Agents & Permissions',
     tagline: 'Manage agents, assign custom permissions, and track status',
     icon: Headphones,
     description:
-      'Telemarketing agents call prospective students and parents. Administrators have complete control over agent accounts and access levels.',
+      'Agents call prospective students and parents. Administrators have complete control over agent accounts and access levels.',
     keyPoints: [
       'Create agent accounts with secure credentials',
       'Granular permissions: choose exactly what each agent can view or edit',
@@ -129,7 +129,7 @@ const TOUR_STEPS: TourStep[] = [
     tagline: 'Visual insights, conversion rates, and friendly competition',
     icon: Trophy,
     description:
-      'Keep your telemarketing team motivated with real-time rankings and comprehensive conversion reports.',
+      'Keep your agent team motivated with real-time rankings and comprehensive conversion reports.',
     keyPoints: [
       'Top agents ranked by total student registrations and payments',
       'Conversion reports showing which grades have the highest interest',

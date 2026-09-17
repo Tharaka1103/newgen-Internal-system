@@ -20,6 +20,7 @@ import {
   Headphones,
   ShieldCheck,
   Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
@@ -61,9 +62,10 @@ interface NavItem {
 const adminNavItems: NavItem[] = [
   { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard, tooltip: 'System overview and key metrics' },
   { label: 'Students', href: '/admin/students', icon: GraduationCap, permission: Permission.STUDENTS_VIEW, tooltip: 'Manage student directory (Grade 2 - A/L)' },
-  { label: 'Agents', href: '/admin/agents', icon: Headphones, permission: Permission.USERS_VIEW, tooltip: 'Manage telemarketers & permissions' },
+  { label: 'Agents', href: '/admin/agents', icon: Headphones, permission: Permission.USERS_VIEW, tooltip: 'Manage agents & permissions' },
   { label: 'Administrators', href: '/admin/admins', icon: ShieldCheck, permission: Permission.USERS_VIEW, tooltip: 'System administrators' },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard, permission: Permission.PAYMENTS_VIEW, tooltip: 'Record and track payments' },
+  { label: 'Loyalty Claims', href: '/admin/claims', icon: Wallet, permission: Permission.CLAIMS_VIEW, tooltip: 'Process agent cash claims & payouts' },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, permission: Permission.REPORTS_VIEW, tooltip: 'Analytics and exports' },
   { label: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy, permission: Permission.LEADERBOARD_VIEW, tooltip: 'Agent rankings' },
   { label: 'Activity Log', href: '/admin/audits', icon: Shield, permission: Permission.AUDITS_VIEW, tooltip: 'System action history' },
@@ -74,6 +76,7 @@ const adminNavItems: NavItem[] = [
 const agentNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/agent/dashboard', icon: LayoutDashboard, tooltip: 'Your performance snapshot' },
   { label: 'Call Records', href: '/agent/call-records', icon: PhoneCall, permission: Permission.CALL_RECORDS_VIEW, tooltip: 'Log and review calls' },
+  { label: 'Loyalty Claims', href: '/agent/claims', icon: Wallet, permission: Permission.CLAIMS_SUBMIT, tooltip: 'Claim loyalty cash rewards' },
   { label: 'Leaderboard', href: '/agent/leaderboard', icon: Trophy, permission: Permission.LEADERBOARD_VIEW, tooltip: 'See how you rank' },
   { label: 'Settings', href: '/agent/settings', icon: Settings, tooltip: 'Your preferences' },
 ];

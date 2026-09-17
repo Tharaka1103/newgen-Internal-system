@@ -5,7 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 const chartConfig = {
-  count: { label: 'Registrations', color: 'var(--chart-1)' },
+  count: { label: 'Registrations', color: '#2563eb' },
 };
 
 export function DashboardRegistrationChart({ data }: { data: { month: string; count: number }[] }) {
@@ -21,7 +21,7 @@ export function DashboardRegistrationChart({ data }: { data: { month: string; co
             <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="count" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="count" fill="#2563eb" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ChartContainer>
       </CardContent>

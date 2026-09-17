@@ -57,7 +57,7 @@ function UsersRouterContent() {
             <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2">
               <Headphones className="h-5 w-5" />
             </div>
-            <CardTitle>Agents & Telemarketers</CardTitle>
+            <CardTitle>Agents</CardTitle>
             <CardDescription>
               Manage call center agents, set targets, toggle account access, and adjust permissions.
             </CardDescription>
