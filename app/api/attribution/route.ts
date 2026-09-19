@@ -12,13 +12,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const mobileNumber = searchParams.get('mobileNumber') ?? '';
     const month = searchParams.get('month') ?? '';
+    const studentId = searchParams.get('studentId') ?? undefined;
 
     const parsed = AttributionLookupSchema.safeParse({ mobileNumber, month });
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: 'Invalid parameters' }, { status: 400 });
     }
 
-    const result = await previewAttribution(parsed.data.mobileNumber, parsed.data.month);
+    const result = await previewAttribution(parsed.data.mobileNumber, parsed.data.month, studentId);
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

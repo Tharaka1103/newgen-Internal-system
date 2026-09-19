@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       entityId: result.payment._id,
       after: {
         mobileNumber: parsed.data.mobileNumber,
+        studentId: parsed.data.studentId,
         amount: parsed.data.amount,
         paymentMonth: parsed.data.paymentMonth,
         attributedAgent: result.attributedAgentId?.toString(),
@@ -100,3 +101,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+

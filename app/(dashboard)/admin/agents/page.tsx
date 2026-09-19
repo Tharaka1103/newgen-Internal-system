@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import {
   Search, UserPlus, AlertCircle, Edit, Trash2, Shield,
-  Headphones, CheckCircle2, KeyRound
+  Headphones, CheckCircle2, KeyRound, Wallet
 } from 'lucide-react';
 import { ADMIN_PERMISSIONS, DEFAULT_AGENT_PERMISSIONS, PermissionKey } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -46,11 +46,14 @@ interface AgentUser {
   status: 'active' | 'disabled';
   permissions: string[];
   createdAt: string;
+  remainingBalance?: number;
+  pendingClaimAmount?: number;
 }
 
 function AgentsManagementContent() {
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<AgentUser[]>([]);
+  const [totalRemainingPayout, setTotalRemainingPayout] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -97,6 +100,9 @@ function AgentsManagementContent() {
         setAgents(data.data.items || []);
         setTotalPages(data.data.totalPages || 1);
         setTotalCount(data.data.total || 0);
+        if (typeof data.data.totalRemainingPayout === 'number') {
+          setTotalRemainingPayout(data.data.totalRemainingPayout);
+        }
       }
     } catch {
       // ignore
@@ -154,6 +160,30 @@ function AgentsManagementContent() {
           <UserPlus className="h-4 w-4 mr-2" />
           New Agent
         </Button>
+      </div>
+
+      {/* Quick Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3 p-4 rounded-xl border bg-card/60 backdrop-blur-sm shadow-sm">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Headphones className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Total Agents</p>
+            <h4 className="text-xl font-bold tracking-tight">{totalCount}</h4>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-4 rounded-xl border bg-card/60 backdrop-blur-sm shadow-sm">
+          <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <Wallet className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Total Remaining Payable</p>
+            <h4 className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+              Rs. {totalRemainingPayout.toLocaleString()}
+            </h4>
+          </div>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -240,6 +270,7 @@ function AgentsManagementContent() {
                 <TableHead className="font-semibold">Email</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Permissions</TableHead>
+                <TableHead className="font-semibold text-right">Remaining Payment</TableHead>
                 <TableHead className="font-semibold">Joined</TableHead>
                 <TableHead className="text-right font-semibold pr-4">Actions</TableHead>
               </TableRow>
@@ -272,6 +303,18 @@ function AgentsManagementContent() {
                     <Badge variant="secondary" className="text-[11px] font-mono">
                       {agent.permissions?.length || 0} granted
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end justify-center">
+                      <span className={`font-mono text-sm ${(agent.remainingBalance ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground'}`}>
+                        Rs. {(agent.remainingBalance ?? 0).toLocaleString()}
+                      </span>
+                      {agent.pendingClaimAmount && agent.pendingClaimAmount > 0 ? (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                          Rs. {agent.pendingClaimAmount.toLocaleString()} claim pending
+                        </span>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {formatDistanceToNow(new Date(agent.createdAt), { addSuffix: true })}

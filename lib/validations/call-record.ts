@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { sriLankanMobileSchema } from './phone';
 
 const GRADE_VALUES = [
   'grade_2', 'grade_3', 'grade_4', 'grade_5',
@@ -8,10 +9,7 @@ const GRADE_VALUES = [
 const OUTCOME_VALUES = ['interested', 'not_interested', 'call_back_later', 'no_answer'] as const;
 
 export const CreateCallRecordSchema = z.object({
-  mobileNumber: z.string()
-    .min(9, 'Mobile number must be at least 9 digits')
-    .max(15)
-    .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format'),
+  mobileNumber: sriLankanMobileSchema,
   grade: z.enum(GRADE_VALUES, { message: 'Please select a valid grade' }),
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Month must be in YYYY-MM format'),
   outcome: z.enum(OUTCOME_VALUES, { message: 'Please select an outcome' }),
@@ -19,7 +17,7 @@ export const CreateCallRecordSchema = z.object({
 });
 
 export const AdminCorrectCallRecordSchema = z.object({
-  mobileNumber: z.string().min(9).max(15).regex(/^[0-9+\-\s()]+$/).optional(),
+  mobileNumber: sriLankanMobileSchema.optional(),
   grade: z.enum(GRADE_VALUES).optional(),
   month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   outcome: z.enum(OUTCOME_VALUES).optional(),

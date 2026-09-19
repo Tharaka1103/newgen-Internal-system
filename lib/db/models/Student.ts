@@ -41,16 +41,26 @@ const StudentSchema = new Schema<IStudent>(
   { timestamps: true }
 );
 
-StudentSchema.index({ mobileNumber: 1 }, { unique: true });
+// Compound unique: one student per (mobileNumber + grade) pair.
+// Same number across different grades is now allowed.
+StudentSchema.index({ mobileNumber: 1, grade: 1 }, { unique: true });
 StudentSchema.index({ grade: 1, status: 1 });
 StudentSchema.index({ registrationDate: -1 });
 StudentSchema.index({ name: 1, status: 1 });
 StudentSchema.index({ createdAt: -1 });
 StudentSchema.index({ registrationDate: -1, grade: 1 });
+StudentSchema.index({ mobileNumber: 1 }); // non-unique, for attribution lookups
 
 // Ensure cached model matches the updated schema (vital for Next.js hot module reloading)
-if (mongoose.models.Student && !mongoose.models.Student.schema?.path('medium')) {
-  delete (mongoose.models as any).Student;
+// Re-register whenever the compound index definition changes.
+if (mongoose.models.Student) {
+  const existing = mongoose.models.Student;
+  const hasCompoundIdx = Object.values(
+    (existing.schema as any).indexes?.() ?? {}
+  ).some((idx: any) => idx?.[0]?.mobileNumber && idx?.[0]?.grade);
+  if (!hasCompoundIdx) {
+    delete (mongoose.models as any).Student;
+  }
 }
 
 const Student: Model<IStudent> = mongoose.models.Student || mongoose.model<IStudent>('Student', StudentSchema);

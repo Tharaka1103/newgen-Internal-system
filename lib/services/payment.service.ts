@@ -19,14 +19,29 @@ export async function createPayment(
 ): Promise<CreatePaymentResult> {
   await connectDB();
 
-  // Find student by mobile number
-  const student = await Student.findOne({ mobileNumber: input.mobileNumber });
-  if (!student) {
-    throw new Error(`No student found with mobile number: ${input.mobileNumber}`);
+  // Resolve the student record.
+  // If a specific studentId is provided (multi-student-per-number scenario), use it directly.
+  // Otherwise fall back to the first active student matching the mobile number.
+  let student: InstanceType<typeof Student> | null = null;
+
+  if (input.studentId) {
+    student = await Student.findById(input.studentId);
+    if (!student) {
+      throw new Error(`Student not found with id: ${input.studentId}`);
+    }
+  } else {
+    student = await Student.findOne({ mobileNumber: input.mobileNumber, status: 'active' });
+    if (!student) {
+      // Try inactive too, as a fallback
+      student = await Student.findOne({ mobileNumber: input.mobileNumber });
+    }
+    if (!student) {
+      throw new Error(`No student found with mobile number: ${input.mobileNumber}`);
+    }
   }
 
   // Attribution
-  const attribution = await resolveAttributedAgent(input.mobileNumber, input.paymentMonth);
+  const attribution = await resolveAttributedAgent(input.mobileNumber, input.paymentMonth, student.grade);
   const monthDate = toMonthStart(input.paymentMonth);
 
   let creditPointsAwarded = 0;
@@ -80,21 +95,28 @@ export async function createPayment(
 /**
  * Preview attribution without creating a payment.
  * Used for the live attribution indicator on the payment form.
+ * If studentId is provided, returns info for that specific student.
  */
-export async function previewAttribution(mobileNumber: string, month: string) {
+export async function previewAttribution(mobileNumber: string, month: string, studentId?: string) {
   await connectDB();
 
-  const student = await Student.findOne({ mobileNumber }).lean();
-  const attribution = await resolveAttributedAgent(mobileNumber, month);
+  let studentDoc: any = null;
+  if (studentId) {
+    studentDoc = await Student.findById(studentId).lean();
+  } else {
+    studentDoc = await Student.findOne({ mobileNumber }).lean();
+  }
+
+  const attribution = await resolveAttributedAgent(mobileNumber, month, studentDoc?.grade);
 
   return {
-    student: student
+    student: studentDoc
       ? {
-          _id: student._id,
-          name: student.name,
-          grade: student.grade,
-          medium: (student as any).medium ?? 'sinhala',
-          status: student.status,
+          _id: studentDoc._id,
+          name: studentDoc.name,
+          grade: studentDoc.grade,
+          medium: (studentDoc as any).medium ?? 'sinhala',
+          status: studentDoc.status,
         }
       : null,
     attribution: attribution

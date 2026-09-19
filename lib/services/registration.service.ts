@@ -32,8 +32,12 @@ export async function registerStudent(params: RegisterStudentParams): Promise<Re
 
   const { input, createdBy, autoCreated = false } = params;
 
-  // Determine if student already exists
-  const existingStudent = await Student.findOne({ mobileNumber: input.mobileNumber });
+  // Determine if student already exists for this specific (number + grade) pair.
+  // Same number in a different grade → isNew = true → creates a new record.
+  const existingStudent = await Student.findOne({
+    mobileNumber: input.mobileNumber,
+    grade: input.grade,
+  });
   const isNew = !existingStudent;
 
   let student: InstanceType<typeof Student>;
@@ -51,14 +55,12 @@ export async function registerStudent(params: RegisterStudentParams): Promise<Re
     });
   } else {
     student = existingStudent!;
-    // Update grade/name/medium if provided and different
+    // Update name/medium if provided and different (grade is the key — never change it here)
     if (
       input.name !== student.name ||
-      input.grade !== student.grade ||
       (input.medium && input.medium !== student.medium)
     ) {
       student.name = input.name;
-      student.grade = input.grade;
       if (input.medium) student.medium = input.medium;
       await student.save();
     }
@@ -67,7 +69,7 @@ export async function registerStudent(params: RegisterStudentParams): Promise<Re
   // Attribution
   const registrationDate = student.registrationDate;
   const referenceMonth = formatMonth(registrationDate);
-  const attribution = await resolveAttributedAgent(input.mobileNumber, referenceMonth);
+  const attribution = await resolveAttributedAgent(input.mobileNumber, referenceMonth, input.grade);
 
   let creditPointsAwarded = 0;
   let loyaltyPointsAwarded = 0;

@@ -1,6 +1,7 @@
 import connectDB from '@/lib/db/mongoose';
 import { CallRecord } from '@/lib/db/models';
 import type { ICallRecord } from '@/lib/db/models/CallRecord';
+import type { Grade } from '@/lib/types';
 import type { Types } from 'mongoose';
 
 /**
@@ -30,23 +31,35 @@ export interface AttributionResult {
 
 /**
  * Core matching logic:
- * 1. Exact month match for (mobileNumber, referenceMonth)
- * 2. Most recent CallRecord before referenceMonth for same number
+ * 1. Exact month match for (mobileNumber, referenceMonth, grade?)
+ * 2. Most recent CallRecord before referenceMonth for same number (and grade if available)
  * 3. null if no match
  */
 export async function resolveAttributedAgent(
   mobileNumber: string,
-  referenceMonth: string
+  referenceMonth: string,
+  grade?: Grade | string
 ): Promise<AttributionResult | null> {
   await connectDB();
 
   const monthDate = toMonthStart(referenceMonth);
 
-  // Step 1: exact month match
-  const exactMatch = await CallRecord.findOne({
-    mobileNumber,
-    month: monthDate,
-  }).populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name').lean();
+  // Step 1: exact month match (try matching grade first if supplied)
+  let exactMatch = null;
+  if (grade) {
+    exactMatch = await CallRecord.findOne({
+      mobileNumber,
+      grade: grade as Grade,
+      month: monthDate,
+    }).populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name').lean();
+  }
+
+  if (!exactMatch) {
+    exactMatch = await CallRecord.findOne({
+      mobileNumber,
+      month: monthDate,
+    }).populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name').lean();
+  }
 
   if (exactMatch) {
     return {
@@ -58,14 +71,28 @@ export async function resolveAttributedAgent(
     };
   }
 
-  // Step 2: most recent prior month
-  const fallback = await CallRecord.findOne({
-    mobileNumber,
-    month: { $lt: monthDate },
-  })
-    .sort({ month: -1 })
-    .populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name')
-    .lean();
+  // Step 2: most recent prior month (try matching grade first if supplied)
+  let fallback = null;
+  if (grade) {
+    fallback = await CallRecord.findOne({
+      mobileNumber,
+      grade: grade as Grade,
+      month: { $lt: monthDate },
+    })
+      .sort({ month: -1 })
+      .populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name')
+      .lean();
+  }
+
+  if (!fallback) {
+    fallback = await CallRecord.findOne({
+      mobileNumber,
+      month: { $lt: monthDate },
+    })
+      .sort({ month: -1 })
+      .populate<{ agent: { _id: Types.ObjectId; name: string } }>('agent', 'name')
+      .lean();
+  }
 
   if (fallback) {
     return {

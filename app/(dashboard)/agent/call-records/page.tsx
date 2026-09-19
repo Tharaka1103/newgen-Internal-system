@@ -24,6 +24,7 @@ import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { cachedFetch, invalidateClientCache } from '@/lib/utils/cachedFetch';
+import { normaliseSLMobile, SL_MOBILE_REGEX } from '@/lib/validations/phone';
 
 interface CallRecord {
   _id: string;
@@ -44,6 +45,7 @@ function NewCallRecordDialog({ open, onClose }: { open: boolean; onClose: () => 
     : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
 
   const [mobileNumber, setMobileNumber] = useState('');
+  const [mobileError, setMobileError] = useState<string | null>(null);
   const [grade, setGrade] = useState('');
   const [month, setMonth] = useState(currentMonth);
   const [outcome, setOutcome] = useState('');
@@ -52,7 +54,22 @@ function NewCallRecordDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const handleMobileBlur = () => {
+    if (!mobileNumber) return;
+    const normalised = normaliseSLMobile(mobileNumber.trim());
+    setMobileNumber(normalised);
+    if (!SL_MOBILE_REGEX.test(normalised)) {
+      setMobileError('Enter a valid Sri Lankan mobile number (e.g. 0711234567)');
+    } else {
+      setMobileError(null);
+    }
+  };
+
   const handleSubmit = async () => {
+    if (!mobileNumber || !SL_MOBILE_REGEX.test(normaliseSLMobile(mobileNumber))) {
+      setMobileError('Enter a valid Sri Lankan mobile number (e.g. 0711234567)');
+      return;
+    }
     if (!grade || !outcome) { setError('Please fill in all required fields.'); return; }
     setError(null);
     setIsLoading(true);
@@ -60,7 +77,7 @@ function NewCallRecordDialog({ open, onClose }: { open: boolean; onClose: () => 
       const res = await fetch('/api/call-records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileNumber, grade, month, outcome, notes }),
+        body: JSON.stringify({ mobileNumber: normaliseSLMobile(mobileNumber), grade, month, outcome, notes }),
       });
       const data = await res.json();
       if (data.success) {
@@ -86,7 +103,19 @@ function NewCallRecordDialog({ open, onClose }: { open: boolean; onClose: () => 
           {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
           <div className="space-y-1.5">
             <Label htmlFor="cr-mobile">Mobile Number <span className="text-destructive">*</span></Label>
-            <Input id="cr-mobile" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} placeholder="07X XXXX XXX" />
+            <Input
+              id="cr-mobile"
+              value={mobileNumber}
+              onChange={(e) => { setMobileNumber(e.target.value); setMobileError(null); }}
+              onBlur={handleMobileBlur}
+              placeholder="0711234567 or +94711234567"
+              className={mobileError ? 'border-destructive' : ''}
+            />
+            {mobileError ? (
+              <p className="text-[11px] text-destructive">{mobileError}</p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Sri Lankan mobile: 07XXXXXXXX</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cr-grade">Grade <span className="text-destructive">*</span></Label>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { sriLankanMobileSchema } from './phone';
 
 export const GRADE_VALUES = [
   'grade_2', 'grade_3', 'grade_4', 'grade_5',
@@ -8,10 +9,7 @@ export const GRADE_VALUES = [
 
 export const CreateStudentSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  mobileNumber: z.string()
-    .min(9, 'Mobile number must be at least 9 digits')
-    .max(15, 'Mobile number too long')
-    .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format'),
+  mobileNumber: sriLankanMobileSchema,
   grade: z.enum(GRADE_VALUES, { message: 'Please select a valid grade' }),
   medium: z.enum(['sinhala', 'english']).default('sinhala'),
   registrationDate: z.string().optional(), // ISO date string
@@ -20,11 +18,7 @@ export const CreateStudentSchema = z.object({
 
 export const UpdateStudentSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  mobileNumber: z.string()
-    .min(9, 'Mobile number must be at least 9 digits')
-    .max(15, 'Mobile number too long')
-    .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format')
-    .optional(),
+  mobileNumber: sriLankanMobileSchema.optional(),
   grade: z.enum(GRADE_VALUES).optional(),
   medium: z.enum(['sinhala', 'english']).optional(),
   status: z.enum(['active', 'inactive']).optional(),

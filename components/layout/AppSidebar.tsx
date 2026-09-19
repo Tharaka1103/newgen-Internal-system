@@ -8,7 +8,6 @@ import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
   BarChart3,
   Settings,
   Trophy,
@@ -61,10 +60,9 @@ interface NavItem {
 
 const adminNavItems: NavItem[] = [
   { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard, tooltip: 'System overview and key metrics' },
-  { label: 'Students', href: '/admin/students', icon: GraduationCap, permission: Permission.STUDENTS_VIEW, tooltip: 'Manage student directory (Grade 2 - A/L)' },
+  { label: 'Students', href: '/admin/students', icon: GraduationCap, permission: Permission.STUDENTS_VIEW, tooltip: 'Manage students & record payments' },
   { label: 'Agents', href: '/admin/agents', icon: Headphones, permission: Permission.USERS_VIEW, tooltip: 'Manage agents & permissions' },
   { label: 'Administrators', href: '/admin/admins', icon: ShieldCheck, permission: Permission.USERS_VIEW, tooltip: 'System administrators' },
-  { label: 'Payments', href: '/admin/payments', icon: CreditCard, permission: Permission.PAYMENTS_VIEW, tooltip: 'Record and track payments' },
   { label: 'Loyalty Claims', href: '/admin/claims', icon: Wallet, permission: Permission.CLAIMS_VIEW, tooltip: 'Process agent cash claims & payouts' },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, permission: Permission.REPORTS_VIEW, tooltip: 'Analytics and exports' },
   { label: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy, permission: Permission.LEADERBOARD_VIEW, tooltip: 'Agent rankings' },

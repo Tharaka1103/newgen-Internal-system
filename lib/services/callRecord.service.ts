@@ -48,6 +48,22 @@ export async function createCallRecord(
 
   const monthDate = toMonthStart(input.month);
 
+  function formatGradeLabel(g: string): string {
+    return g.replace(/^grade_/, 'Grade ').replace('o_level', 'O/Level').replace('a_level', 'A/Level');
+  }
+
+  // Pre-check for duplicate (mobileNumber, grade, month)
+  const existing = await CallRecord.findOne({
+    mobileNumber: input.mobileNumber,
+    grade: input.grade,
+    month: monthDate,
+  });
+  if (existing) {
+    throw new Error(
+      `A call record already exists for mobile number ${input.mobileNumber} and ${formatGradeLabel(input.grade)} in ${input.month}. Only one call record per number and grade per month is allowed.`
+    );
+  }
+
   try {
     const record = await CallRecord.create({
       mobileNumber: input.mobileNumber,
@@ -61,7 +77,7 @@ export async function createCallRecord(
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 11000) {
       throw new Error(
-        `A call record already exists for mobile number ${input.mobileNumber} in ${input.month}. Only one call record per number per month is allowed.`
+        `A call record already exists for mobile number ${input.mobileNumber} and ${formatGradeLabel(input.grade)} in ${input.month}. Only one call record per number and grade per month is allowed.`
       );
     }
     throw error;
@@ -104,7 +120,7 @@ export async function adminCorrectCallRecord(
     await record.save();
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 11000) {
-      throw new Error('A call record already exists for that mobile number and month combination.');
+      throw new Error('A call record already exists for that mobile number, grade, and month combination.');
     }
     throw error;
   }

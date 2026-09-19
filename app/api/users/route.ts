@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
-import { User } from '@/lib/db/models';
+import { User, LoyaltyLedger, ClaimRequest } from '@/lib/db/models';
 import { requireAdmin } from '@/lib/auth/permissions';
 import { CreateUserSchema } from '@/lib/validations/user';
 import { writeAuditLog, extractRequestMeta } from '@/lib/services/audit.service';
@@ -39,9 +39,55 @@ export async function GET(request: Request) {
       User.countDocuments(query),
     ]);
 
+    // Enrich agent records with their current remaining balance and pending claims
+    const agentIds = users.filter((u) => u.role === 'agent').map((u) => u._id);
+    const balanceMap: Record<string, number> = {};
+    const pendingClaimMap: Record<string, number> = {};
+
+    let totalRemainingPayout = 0;
+
+    if (agentIds.length > 0) {
+      const [balances, pendingClaims, allAgentsTotal] = await Promise.all([
+        LoyaltyLedger.aggregate([
+          { $match: { agent: { $in: agentIds } } },
+          { $group: { _id: '$agent', total: { $sum: '$amount' } } },
+        ]),
+        ClaimRequest.aggregate([
+          { $match: { agent: { $in: agentIds }, status: 'pending' } },
+          { $group: { _id: '$agent', totalPending: { $sum: '$requestedAmount' } } },
+        ]),
+        role === 'agent'
+          ? LoyaltyLedger.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }])
+          : Promise.resolve([]),
+      ]);
+
+      balances.forEach((b) => {
+        balanceMap[b._id.toString()] = b.total || 0;
+      });
+      pendingClaims.forEach((c) => {
+        pendingClaimMap[c._id.toString()] = c.totalPending || 0;
+      });
+
+      if (allAgentsTotal.length > 0) {
+        totalRemainingPayout = allAgentsTotal[0]?.total ?? 0;
+      }
+    }
+
+    const items = users.map((u) => ({
+      ...u,
+      remainingBalance: balanceMap[u._id.toString()] ?? 0,
+      pendingClaimAmount: pendingClaimMap[u._id.toString()] ?? 0,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: { items: users, total, page, totalPages: Math.ceil(total / limit) },
+      data: {
+        items,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        totalRemainingPayout: role === 'agent' ? totalRemainingPayout : undefined,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch users';
