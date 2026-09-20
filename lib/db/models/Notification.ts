@@ -18,7 +18,16 @@ const NotificationSchema = new Schema<INotification>(
     recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     type: {
       type: String,
-      enum: ['registration_attributed', 'payment_attributed', 'claim_approved', 'claim_rejected', 'system'],
+      enum: [
+        'registration_attributed',
+        'payment_attributed',
+        'claim_approved',
+        'claim_rejected',
+        'call_record_edit_requested',
+        'call_record_edit_approved',
+        'call_record_edit_rejected',
+        'system',
+      ],
       required: true,
     },
     title: { type: String, required: true },

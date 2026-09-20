@@ -1,7 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Bell, ArrowRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,8 @@ interface Notification {
 }
 
 export function NotificationBell() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -98,28 +100,55 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">No notifications</div>
           ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification._id}
-                className={`px-3 py-2.5 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!notification.read ? 'bg-primary/5' : ''}`}
-                onClick={() => !notification.read && handleMarkRead(notification._id)}
-              >
-                <div className="flex items-start gap-2">
-                  {!notification.read && (
-                    <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                  )}
-                  <div className={!notification.read ? '' : 'pl-3.5'}>
-                    <p className="text-sm font-medium leading-tight">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                    </p>
+            notifications.map((notification) => {
+              const notificationsUrl =
+                session?.user?.role === 'admin'
+                  ? `/admin/notifications?id=${notification._id}`
+                  : `/agent/notifications?id=${notification._id}`;
+
+              return (
+                <div
+                  key={notification._id}
+                  className={`px-3 py-2.5 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!notification.read ? 'bg-primary/5' : ''}`}
+                  onClick={() => {
+                    if (!notification.read) {
+                      handleMarkRead(notification._id);
+                    }
+                    setOpen(false);
+                    router.push(notificationsUrl);
+                  }}
+                >
+                  <div className="flex items-start gap-2">
+                    {!notification.read && (
+                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    )}
+                    <div className={!notification.read ? '' : 'pl-3.5'}>
+                      <p className="text-sm font-medium leading-tight">{notification.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notification.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </ScrollArea>
+        <div className="p-2 border-t border-border bg-muted/20 text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs h-7 text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setOpen(false);
+              const target = session?.user?.role === 'admin' ? '/admin/notifications' : '/agent/notifications';
+              router.push(target);
+            }}
+          >
+            View all notifications
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

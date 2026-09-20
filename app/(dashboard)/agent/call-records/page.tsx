@@ -19,7 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Phone } from 'lucide-react';
+import { AlertCircle, Phone, Edit, KeyRound, Clock } from 'lucide-react';
 import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
@@ -34,6 +34,279 @@ interface CallRecord {
   outcome: string;
   notes?: string;
   createdAt: string;
+}
+
+interface EditRequestItem {
+  _id: string;
+  callRecord: string | { _id: string };
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  reason: string;
+  adminNote?: string;
+}
+
+function RequestEditDialog({
+  record,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  record: CallRecord | null;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (!record) return null;
+
+  const handleSubmit = async () => {
+    if (!reason.trim()) {
+      setError('Please provide a reason for editing this call record.');
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/call-records/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callRecordId: record._id, reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReason('');
+        onSuccess();
+        onClose();
+      } else {
+        setError(data.error || 'Failed to submit edit request.');
+      }
+    } catch {
+      setError('Failed to submit request. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            Request Edit Permission
+          </DialogTitle>
+          <DialogDescription>
+            Call records are immutable by default. Submit a request to the administrator to unlock this record for editing.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="rounded-lg bg-muted/40 p-3 text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Mobile:</span>
+              <span className="font-mono font-medium">{record.mobileNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Grade:</span>
+              <span>{GRADE_OPTIONS.find((g) => g.value === record.grade)?.label}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Month:</span>
+              <span>{record.month ? new Date(record.month).toLocaleDateString('en', { month: 'short', year: 'numeric' }) : ''}</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-reason">
+              Reason for edit <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="edit-reason"
+              placeholder="Explain why this call record needs modification (e.g. entered wrong grade, typo in mobile)..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isLoading || !reason.trim()}>
+            {isLoading ? 'Submitting...' : 'Submit Request'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AgentEditRecordDialog({
+  record,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  record: CallRecord | null;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [grade, setGrade] = useState('');
+  const [outcome, setOutcome] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (record) {
+      setMobileNumber(record.mobileNumber);
+      setGrade(record.grade);
+      setOutcome(record.outcome);
+      setNotes(record.notes || '');
+      setError(null);
+    }
+  }, [record]);
+
+  if (!record) return null;
+
+  const handleSubmit = async () => {
+    const norm = normaliseSLMobile(mobileNumber.trim());
+    if (!SL_MOBILE_REGEX.test(norm)) {
+      setError('Enter a valid Sri Lankan mobile number (e.g. 0711234567)');
+      return;
+    }
+    if (!grade || !outcome) {
+      setError('Grade and outcome are required.');
+      return;
+    }
+
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/call-records/${record._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobileNumber: norm,
+          grade,
+          outcome,
+          notes: notes.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        invalidateClientCache('/api/call-records');
+        onSuccess();
+        onClose();
+      } else {
+        setError(data.error || 'Failed to update record.');
+      }
+    } catch {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="h-5 w-5 text-emerald-600" />
+            Edit Call Record
+          </DialogTitle>
+          <DialogDescription>
+            Admin approved edit permission for this record. Update the details below.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-mobile">Mobile Number *</Label>
+            <Input
+              id="edit-mobile"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+              placeholder="0711234567"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-grade">Grade *</Label>
+            <Select value={grade} onValueChange={(val) => setGrade(val ?? '')}>
+              <SelectTrigger id="edit-grade">
+                <SelectValue placeholder="Select grade" />
+              </SelectTrigger>
+              <SelectContent>
+                {GRADE_OPTIONS.map((g) => (
+                  <SelectItem key={g.value} value={g.value}>
+                    {g.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-outcome">Outcome *</Label>
+            <Select value={outcome} onValueChange={(val) => setOutcome(val ?? '')}>
+              <SelectTrigger id="edit-outcome">
+                <SelectValue placeholder="Select outcome" />
+              </SelectTrigger>
+              <SelectContent>
+                {CALL_OUTCOMES.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-notes">Notes (optional)</Label>
+            <Textarea
+              id="edit-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Call notes..."
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700">
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // New Call Record Form
@@ -241,9 +514,12 @@ const OUTCOME_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | '
 function CallRecordsContent() {
   const searchParams = useSearchParams();
   const [records, setRecords] = useState<CallRecord[]>([]);
+  const [editRequestsMap, setEditRequestsMap] = useState<Record<string, EditRequestItem>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showNewRecord, setShowNewRecord] = useState(false);
   const [showClaim, setShowClaim] = useState(false);
+  const [requestingRecord, setRequestingRecord] = useState<CallRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<CallRecord | null>(null);
   const [balance, setBalance] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -267,9 +543,10 @@ function CallRecordsContent() {
 
   const fetchRecords = useCallback(async () => {
     try {
-      const [recordsRes, claimsRes] = await Promise.all([
+      const [recordsRes, claimsRes, reqsRes] = await Promise.all([
         cachedFetch(`/api/call-records?page=${page}&limit=20`),
         cachedFetch('/api/claims?limit=1'),
+        fetch('/api/call-records/requests').then((r) => r.json()),
       ]);
       const recordsData = recordsRes.data;
       const claimsData = claimsRes.data;
@@ -279,6 +556,19 @@ function CallRecordsContent() {
         setTotalCount(recordsData.data.total || 0);
       }
       if (claimsData?.success) setBalance(claimsData.data.balance ?? 0);
+
+      if (reqsRes?.success && Array.isArray(reqsRes.data.items)) {
+        const map: Record<string, EditRequestItem> = {};
+        reqsRes.data.items.forEach((item: any) => {
+          const recId = typeof item.callRecord === 'object' ? item.callRecord?._id : item.callRecord;
+          if (recId) {
+            // Keep the latest or most active request status
+            map[recId] = item;
+          }
+        });
+        setEditRequestsMap(map);
+      }
+
       if (!recordsRes.isStale) {
         setIsLoading(false);
       }
@@ -323,34 +613,70 @@ function CallRecordsContent() {
                 <TableHead>Outcome</TableHead>
                 <TableHead>Month</TableHead>
                 <TableHead className="hidden sm:table-cell">Notes</TableHead>
-                <TableHead className="text-right">Logged</TableHead>
+                <TableHead>Logged</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.map((record) => (
-                <TableRow key={record._id}>
-                  <TableCell className="font-medium">{record.mobileNumber}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {GRADE_OPTIONS.find((g) => g.value === record.grade)?.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={OUTCOME_COLORS[record.outcome] ?? 'outline'} className="text-xs capitalize">
-                      {CALL_OUTCOMES.find((o) => o.value === record.outcome)?.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {new Date(record.month).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
-                    {record.notes || '—'}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground text-sm">
-                    {formatDistanceToNow(new Date(record.createdAt), { addSuffix: true })}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {records.map((record) => {
+                const editRequest = editRequestsMap[record._id];
+                return (
+                  <TableRow key={record._id}>
+                    <TableCell className="font-medium">{record.mobileNumber}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {GRADE_OPTIONS.find((g) => g.value === record.grade)?.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={OUTCOME_COLORS[record.outcome] ?? 'outline'} className="text-xs capitalize">
+                        {CALL_OUTCOMES.find((o) => o.value === record.outcome)?.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {new Date(record.month).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
+                      {record.notes || '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {formatDistanceToNow(new Date(record.createdAt), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {editRequest?.status === 'approved' ? (
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => setEditingRecord(record)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit Record
+                        </Button>
+                      ) : editRequest?.status === 'pending' ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[11px] text-amber-600 border-amber-500/30 bg-amber-500/10 py-1"
+                          title="Permission request submitted to admin"
+                        >
+                          <Clock className="h-3 w-3 mr-1 animate-pulse" />
+                          Edit Pending
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => setRequestingRecord(record)}
+                          title="Request permission to edit this call record"
+                        >
+                          <KeyRound className="h-3 w-3 mr-1" />
+                          Request Edit
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
 
@@ -370,6 +696,18 @@ function CallRecordsContent() {
 
       <NewCallRecordDialog open={showNewRecord} onClose={() => { handleCloseNewRecord(); fetchRecords(); }} />
       <SubmitClaimDialog open={showClaim} onClose={() => { setShowClaim(false); fetchRecords(); }} balance={balance} />
+      <RequestEditDialog
+        record={requestingRecord}
+        open={Boolean(requestingRecord)}
+        onClose={() => setRequestingRecord(null)}
+        onSuccess={() => fetchRecords()}
+      />
+      <AgentEditRecordDialog
+        record={editingRecord}
+        open={Boolean(editingRecord)}
+        onClose={() => setEditingRecord(null)}
+        onSuccess={() => fetchRecords()}
+      />
     </div>
   );
 }

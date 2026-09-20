@@ -111,7 +111,8 @@ export type AuditAction =
   | 'user.create' | 'user.update' | 'user.disable' | 'user.enable' | 'user.delete'
   | 'user.permission.grant' | 'user.permission.revoke'
   | 'student.create' | 'student.update' | 'student.delete'
-  | 'call_record.create' | 'call_record.admin_correct'
+  | 'call_record.create' | 'call_record.edit' | 'call_record.admin_correct'
+  | 'call_record.edit_request' | 'call_record.edit_approve' | 'call_record.edit_reject'
   | 'payment.create'
   | 'claim.submit' | 'claim.approve' | 'claim.reject'
   | 'setting.update'
@@ -121,7 +122,7 @@ export type AuditAction =
   | 'target.set';
 
 export type AuditEntityType =
-  | 'User' | 'Student' | 'CallRecord' | 'PaymentRecord'
+  | 'User' | 'Student' | 'CallRecord' | 'CallRecordEditRequest' | 'PaymentRecord'
   | 'ClaimRequest' | 'Setting' | 'Session' | 'MonthlyTarget';
 
 // ── Notification ──────────────────────────────────────────────
@@ -130,6 +131,9 @@ export type NotificationType =
   | 'payment_attributed'
   | 'claim_approved'
   | 'claim_rejected'
+  | 'call_record_edit_requested'
+  | 'call_record_edit_approved'
+  | 'call_record_edit_rejected'
   | 'system';
 
 // ── Settings Keys ─────────────────────────────────────────────

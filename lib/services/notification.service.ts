@@ -45,6 +45,37 @@ export async function markAllNotificationsRead(recipientId: string): Promise<voi
   await Notification.updateMany({ recipient: recipientId, read: false }, { $set: { read: true } });
 }
 
+export async function notifyAdmins(params: Omit<CreateNotificationParams, 'recipientId'>): Promise<void> {
+  try {
+    await connectDB();
+    const { User } = await import('@/lib/db/models');
+    const admins = await User.find({ role: 'admin', status: 'active' }).select('_id').lean();
+    if (admins.length === 0) return;
+
+    const docs = admins.map((admin) => ({
+      recipient: admin._id,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      referenceId: params.referenceId,
+      entityType: params.entityType,
+      read: false,
+    }));
+
+    await Notification.insertMany(docs);
+  } catch (error) {
+    console.error('[Notification] Failed to notify admins:', error);
+  }
+}
+
+export async function deleteNotification(
+  notificationId: string,
+  recipientId: string
+): Promise<void> {
+  await connectDB();
+  await Notification.findOneAndDelete({ _id: notificationId, recipient: recipientId });
+}
+
 export async function getUnreadCount(recipientId: string): Promise<number> {
   await connectDB();
   return Notification.countDocuments({ recipient: recipientId, read: false });

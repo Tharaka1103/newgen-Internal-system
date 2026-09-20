@@ -12,3 +12,4 @@ export { default as AuditLog } from './AuditLog';
 export { default as Notification } from './Notification';
 export { default as Setting } from './Setting';
 export { default as MonthlyTarget } from './MonthlyTarget';
+export { default as CallRecordEditRequest } from './CallRecordEditRequest';
