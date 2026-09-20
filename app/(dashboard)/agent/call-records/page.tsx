@@ -240,13 +240,10 @@ function AgentEditRecordDialog({
             <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
             <div className="text-xs space-y-1">
               <p className="font-semibold text-amber-800 dark:text-amber-300">
-                One-Time Edit Warning / එක් වරක් පමණක් සංස්කරණය කළ හැක
+                One-Time Edit Warning!
               </p>
-              <p className="text-muted-foreground leading-relaxed">
-                මෙම call record එක edit කළ හැක්කේ <strong>එක් වරක් පමණි</strong>. එබැවින් සියලුම තොරතුරු (Mobile Number, Grade, Outcome, Notes) නිවැරදිදැයි හොඳින් පරීක්ෂා කර Save කරන්න.
-              </p>
-              <p className="text-[11px] text-muted-foreground/80">
-                (You can only edit this record once with this permission. Please verify all details before submitting.)
+              <p className="text-[11px] text-text">
+                You can only edit this record once with this permission. Please verify all details before submitting.
               </p>
             </div>
           </div>
