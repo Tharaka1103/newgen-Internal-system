@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
-import { User } from '@/lib/db/models';
+import { User, LoyaltyLedger, ClaimRequest, CallRecord } from '@/lib/db/models';
 import { requireAdmin } from '@/lib/auth/permissions';
 import { UpdateUserSchema } from '@/lib/validations/user';
 import { writeAuditLog, extractRequestMeta } from '@/lib/services/audit.service';
@@ -19,6 +19,64 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
     if (!user) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role === 'agent') {
+      const objId = user._id;
+      const [
+        balanceAgg,
+        pendingClaimsAgg,
+        callRecordsCount,
+        recentLedger,
+        recentClaims,
+      ] = await Promise.all([
+        LoyaltyLedger.aggregate([
+          { $match: { agent: objId } },
+          {
+            $group: {
+              _id: null,
+              balance: { $sum: '$amount' },
+              totalEarned: {
+                $sum: { $cond: [{ $gt: ['$amount', 0] }, '$amount', 0] },
+              },
+              totalPaid: {
+                $sum: { $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0] },
+              },
+            },
+          },
+        ]),
+        ClaimRequest.aggregate([
+          { $match: { agent: objId, status: 'pending' } },
+          { $group: { _id: null, totalPending: { $sum: '$requestedAmount' } } },
+        ]),
+        CallRecord.countDocuments({ agent: objId }),
+        LoyaltyLedger.find({ agent: objId })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .lean(),
+        ClaimRequest.find({ agent: objId })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .populate('processedBy', 'name')
+          .lean(),
+      ]);
+
+      const bal = balanceAgg[0] || { balance: 0, totalEarned: 0, totalPaid: 0 };
+      const pendingClaimAmount = pendingClaimsAgg[0]?.totalPending ?? 0;
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...user,
+          remainingBalance: bal.balance ?? 0,
+          totalEarned: bal.totalEarned ?? 0,
+          totalPaid: bal.totalPaid ?? 0,
+          pendingClaimAmount,
+          callRecordsCount,
+          recentLedger,
+          recentClaims,
+        },
+      });
     }
 
     return NextResponse.json({ success: true, data: user });

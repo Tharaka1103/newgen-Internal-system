@@ -114,7 +114,7 @@ export type AuditAction =
   | 'call_record.create' | 'call_record.edit' | 'call_record.admin_correct'
   | 'call_record.edit_request' | 'call_record.edit_approve' | 'call_record.edit_reject'
   | 'payment.create'
-  | 'claim.submit' | 'claim.approve' | 'claim.reject'
+  | 'claim.submit' | 'claim.approve' | 'claim.reject' | 'agent.manual_payout'
   | 'setting.update'
   | 'auth.login' | 'auth.logout' | 'auth.failed_login'
   | 'auth.forgot_password' | 'auth.reset_password'

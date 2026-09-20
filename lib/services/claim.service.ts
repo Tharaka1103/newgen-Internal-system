@@ -1,5 +1,5 @@
 import connectDB from '@/lib/db/mongoose';
-import { ClaimRequest, LoyaltyLedger } from '@/lib/db/models';
+import { ClaimRequest, LoyaltyLedger, User } from '@/lib/db/models';
 import { createNotification } from './notification.service';
 import { getNumericSetting } from './settings.service';
 import { SettingKey } from '@/lib/types';
@@ -63,6 +63,11 @@ export async function approveClaim(
   if (!claim) throw new Error('Claim not found');
   if (claim.status !== 'pending') throw new Error('Claim is not pending');
 
+  const balance = await getLoyaltyBalance(claim.agent);
+  if (paidAmount > balance) {
+    throw new Error(`Paid amount (Rs. ${paidAmount.toLocaleString()}) exceeds agent balance (Rs. ${balance.toLocaleString()})`);
+  }
+
   // Deduct from loyalty ledger (negative amount = claimed)
   await LoyaltyLedger.create({
     agent: claim.agent,
@@ -118,4 +123,85 @@ export async function rejectClaim(
   });
 
   return claim;
+}
+
+export interface ManualPayoutInput {
+  amount: number;
+  note?: string;
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    branchName?: string;
+  };
+}
+
+/**
+ * Directly record a manual payout to an agent by Admin.
+ * Creates a paid ClaimRequest record, creates a negative LoyaltyLedger entry,
+ * sends notification to the agent, and reduces remaining balance immediately.
+ */
+export async function createManualPayout(
+  agentId: string | Types.ObjectId,
+  input: ManualPayoutInput,
+  processedBy: string | Types.ObjectId
+): Promise<{ claim: InstanceType<typeof ClaimRequest>; newBalance: number }> {
+  await connectDB();
+  const objAgentId = typeof agentId === 'string' ? new mongoose.Types.ObjectId(agentId) : agentId;
+  const objAdminId = typeof processedBy === 'string' ? new mongoose.Types.ObjectId(processedBy) : processedBy;
+
+  const agentUser = await User.findById(objAgentId);
+  if (!agentUser) {
+    throw new Error('Agent user not found');
+  }
+
+  const amount = Number(input.amount);
+  if (isNaN(amount) || amount <= 0) {
+    throw new Error('Payout amount must be greater than 0');
+  }
+
+  const currentBalance = await getLoyaltyBalance(objAgentId);
+  if (amount > currentBalance) {
+    throw new Error(`Cannot pay Rs. ${amount.toLocaleString()}. Agent's payable balance is only Rs. ${currentBalance.toLocaleString()}`);
+  }
+
+  const bankDetails = {
+    accountName: input.bankDetails?.accountName?.trim() || agentUser.name || 'Agent',
+    accountNumber: input.bankDetails?.accountNumber?.trim() || 'Manual Payout',
+    bankName: input.bankDetails?.bankName?.trim() || 'Direct Payment',
+    branchName: input.bankDetails?.branchName?.trim() || '',
+  };
+
+  const claim = await ClaimRequest.create({
+    agent: objAgentId,
+    requestedAmount: amount,
+    paidAmount: amount,
+    status: 'paid',
+    bankDetails,
+    paidAt: new Date(),
+    processedBy: objAdminId,
+    adminNote: input.note ? `Manual Payout: ${input.note}` : 'Direct manual payout by Administrator',
+  });
+
+  await LoyaltyLedger.create({
+    agent: objAgentId,
+    type: 'claimed',
+    amount: -amount,
+    referenceId: claim._id,
+    referenceModel: 'ClaimRequest',
+    description: `Manual payout recorded by Admin: Rs. ${amount.toLocaleString()}${input.note ? ` (${input.note})` : ''}`,
+  });
+
+  const newBalance = currentBalance - amount;
+
+  await createNotification({
+    recipientId: objAgentId,
+    type: 'claim_approved',
+    title: 'Payment Received',
+    message: `Administrator recorded a manual payout of Rs. ${amount.toLocaleString()} to your account.${input.note ? ` Note: ${input.note}` : ''}`,
+    referenceId: claim._id,
+    entityType: 'ClaimRequest',
+  });
+
+  return { claim, newBalance };
 }

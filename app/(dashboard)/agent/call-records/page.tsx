@@ -19,7 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Phone, Edit, KeyRound, Clock } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Phone, Edit, KeyRound, Clock } from 'lucide-react';
 import { CALL_OUTCOMES, GRADE_OPTIONS } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
@@ -235,6 +235,22 @@ function AgentEditRecordDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* One-Time Edit Warning */}
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-semibold text-amber-800 dark:text-amber-300">
+                One-Time Edit Warning / එක් වරක් පමණක් සංස්කරණය කළ හැක
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                මෙම call record එක edit කළ හැක්කේ <strong>එක් වරක් පමණි</strong>. එබැවින් සියලුම තොරතුරු (Mobile Number, Grade, Outcome, Notes) නිවැරදිදැයි හොඳින් පරීක්ෂා කර Save කරන්න.
+              </p>
+              <p className="text-[11px] text-muted-foreground/80">
+                (You can only edit this record once with this permission. Please verify all details before submitting.)
+              </p>
+            </div>
+          </div>
+
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
