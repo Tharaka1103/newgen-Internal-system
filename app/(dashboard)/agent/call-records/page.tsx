@@ -242,7 +242,7 @@ function AgentEditRecordDialog({
               <p className="font-semibold text-amber-800 dark:text-amber-300">
                 One-Time Edit Warning!
               </p>
-              <p className="text-[11px] text-text">
+              <p className="text-[11px] text-muted-foreground">
                 You can only edit this record once with this permission. Please verify all details before submitting.
               </p>
             </div>

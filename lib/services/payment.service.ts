@@ -44,6 +44,19 @@ export async function createPayment(
   const attribution = await resolveAttributedAgent(input.mobileNumber, input.paymentMonth, student.grade);
   const monthDate = toMonthStart(input.paymentMonth);
 
+  // Prevent duplicate payment for same student in the same month
+  const existingPayment = await PaymentRecord.findOne({
+    student: student._id,
+    paymentMonth: monthDate,
+  });
+
+  if (existingPayment) {
+    const formattedGrade = student.grade.replace(/_/g, ' ');
+    throw new Error(
+      `A payment record already exists for ${student.name} (${input.mobileNumber}, ${formattedGrade}) for ${input.paymentMonth}. Duplicate payments for the same student and month are not allowed.`
+    );
+  }
+
   let creditPointsAwarded = 0;
 
   // Create payment record
@@ -100,11 +113,14 @@ export async function createPayment(
 export async function previewAttribution(mobileNumber: string, month: string, studentId?: string) {
   await connectDB();
 
+  // Find all matching students for this mobile number
+  const allStudents = await Student.find({ mobileNumber }).sort({ grade: 1 }).lean();
+
   let studentDoc: any = null;
   if (studentId) {
-    studentDoc = await Student.findById(studentId).lean();
-  } else {
-    studentDoc = await Student.findOne({ mobileNumber }).lean();
+    studentDoc = allStudents.find((s) => s._id.toString() === studentId) || await Student.findById(studentId).lean();
+  } else if (allStudents.length > 0) {
+    studentDoc = allStudents[0];
   }
 
   const attribution = await resolveAttributedAgent(mobileNumber, month, studentDoc?.grade);
@@ -119,6 +135,13 @@ export async function previewAttribution(mobileNumber: string, month: string, st
           status: studentDoc.status,
         }
       : null,
+    students: allStudents.map((s) => ({
+      _id: s._id,
+      name: s.name,
+      grade: s.grade,
+      medium: (s as any).medium ?? 'sinhala',
+      status: s.status,
+    })),
     attribution: attribution
       ? {
           agentId: attribution.agentId,

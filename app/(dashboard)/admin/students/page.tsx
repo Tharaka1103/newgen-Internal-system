@@ -32,7 +32,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Search, UserPlus, AlertCircle, Edit, Trash2, Eye,
+  Search, UserPlus, AlertCircle, AlertTriangle, Edit, Trash2, Eye,
   GraduationCap, Phone, Calendar, CheckCircle2, CreditCard,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -170,6 +170,78 @@ function StudentsManagementContent() {
   const [payTotalCount, setPayTotalCount] = useState(0);
   const [showStandalonePayDialog, setShowStandalonePayDialog] = useState(false);
 
+  // Single payment delete state
+  const [deletingPayment, setDeletingPayment] = useState<PaymentRecord | null>(null);
+  const [isDeletingPayment, setIsDeletingPayment] = useState(false);
+
+  const handleDeletePaymentConfirm = async () => {
+    if (!deletingPayment) return;
+    setIsDeletingPayment(true);
+    try {
+      const res = await fetch(`/api/payments/${deletingPayment._id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDeletingPayment(null);
+        invalidateClientCache('/api/payments');
+        fetchPayments();
+        fetchDuplicates();
+      } else {
+        alert(data.error || 'Failed to delete payment record');
+      }
+    } catch {
+      alert('An unexpected error occurred while deleting the payment record.');
+    } finally {
+      setIsDeletingPayment(false);
+    }
+  };
+
+  // Duplicate payments detection & cleanup
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    totalDuplicateGroups: number;
+    totalRedundantRecords: number;
+    groups: any[];
+  } | null>(null);
+  const [isDeduplicating, setIsDeduplicating] = useState(false);
+  const [showDeduplicateDialog, setShowDeduplicateDialog] = useState(false);
+
+  const fetchDuplicates = useCallback(async () => {
+    try {
+      const res = await fetch('/api/payments/duplicates');
+      const data = await res.json();
+      if (data.success) {
+        setDuplicateInfo(data.data);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleDeduplicateConfirm = async () => {
+    setIsDeduplicating(true);
+    try {
+      const res = await fetch('/api/payments/duplicates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowDeduplicateDialog(false);
+        invalidateClientCache('/api/payments');
+        fetchPayments();
+        fetchDuplicates();
+      } else {
+        alert(data.error || 'Failed to clean duplicate payment records.');
+      }
+    } catch {
+      alert('An unexpected error occurred while cleaning duplicate payments.');
+    } finally {
+      setIsDeduplicating(false);
+    }
+  };
+
   const fetchPayments = useCallback(async () => {
     try {
       const params = new URLSearchParams({ page: String(payPage), limit: '20' });
@@ -190,10 +262,13 @@ function StudentsManagementContent() {
 
   useEffect(() => {
     if (activeTab === 'payments') {
-      const t = setTimeout(fetchPayments, 250);
+      const t = setTimeout(() => {
+        fetchPayments();
+        fetchDuplicates();
+      }, 250);
       return () => clearTimeout(t);
     }
-  }, [fetchPayments, activeTab]);
+  }, [fetchPayments, fetchDuplicates, activeTab]);
 
   return (
     <div className="space-y-6">
@@ -377,7 +452,7 @@ function StudentsManagementContent() {
                           </Button>
                           <Button
                             variant="ghost" size="sm"
-                            className="h-8 w-8 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             title="Delete Student"
                             onClick={() => setDeletingStudent(student)}
                           >
@@ -406,6 +481,30 @@ function StudentsManagementContent() {
 
         {/* ── PAYMENTS TAB ── */}
         <TabsContent value="payments" className="mt-4 space-y-4">
+          {/* Duplicate Payments Alert Banner */}
+          {duplicateInfo && duplicateInfo.totalRedundantRecords > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+              <div className="flex items-start sm:items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div>
+                  <h5 className="font-semibold text-sm">Duplicate Payment Records Detected</h5>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Found <strong>{duplicateInfo.totalRedundantRecords} redundant duplicate payment record{duplicateInfo.totalRedundantRecords === 1 ? '' : 's'}</strong> across {duplicateInfo.totalDuplicateGroups} student payment{duplicateInfo.totalDuplicateGroups === 1 ? '' : 's'}. You can clean all duplicates with one click while keeping the original records intact.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeduplicateDialog(true)}
+                className="shrink-0 self-start sm:self-center"
+                id="clean-duplicates-btn"
+              >
+                Clean Duplicates
+              </Button>
+            </div>
+          )}
+
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -455,42 +554,91 @@ function StudentsManagementContent() {
                     <TableHead className="font-semibold">Month</TableHead>
                     <TableHead className="font-semibold">Attributed To</TableHead>
                     <TableHead className="text-right font-semibold">Date</TableHead>
+                    <TableHead className="text-right font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.map((payment) => (
-                    <TableRow key={payment._id} className="hover:bg-muted/20">
-                      <TableCell className="font-medium">
-                        {payment.student ? (
-                          <div>
-                            <p className="text-sm">{payment.student.name}</p>
-                            <p className="text-[11px] text-muted-foreground capitalize">
-                              {payment.student.grade.replace(/_/g, ' ')}
-                            </p>
-                          </div>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs text-muted-foreground">{payment.mobileNumber}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-medium font-mono">
-                        Rs. {payment.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(payment.paymentMonth).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
-                      </TableCell>
-                      <TableCell>
-                        {payment.attributedAgent ? (
-                          <Badge variant="secondary" className="text-xs">{payment.attributedAgent.name}</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">None</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground text-xs">
-                        {format(new Date(payment.createdAt), 'dd MMM yyyy')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {(() => {
+                    const redundantPaymentIds = new Set(
+                      duplicateInfo?.groups?.flatMap((g: any) => g.payments?.slice(1).map((p: any) => p._id)) || []
+                    );
+                    const duplicateGroupPaymentIds = new Set(
+                      duplicateInfo?.groups?.flatMap((g: any) => g.payments?.map((p: any) => p._id)) || []
+                    );
+
+                    return payments.map((payment) => {
+                      const isRedundant = redundantPaymentIds.has(payment._id);
+                      const isDuplicateGroup = duplicateGroupPaymentIds.has(payment._id);
+
+                      return (
+                        <TableRow
+                          key={payment._id}
+                          className={`hover:bg-muted/20 ${isRedundant ? 'bg-destructive/5' : ''}`}
+                        >
+                          <TableCell className="font-medium">
+                            {payment.student ? (
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium">{payment.student.name}</p>
+                                  {isRedundant ? (
+                                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                                      Duplicate
+                                    </Badge>
+                                  ) : isDuplicateGroup ? (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                                      Original
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground capitalize">
+                                  {payment.student.grade.replace(/_/g, ' ')}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">—</span>
+                                {isRedundant && (
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                                    Duplicate
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-mono text-xs text-muted-foreground">{payment.mobileNumber}</span>
+                          </TableCell>
+                          <TableCell className="text-right font-medium font-mono">
+                            Rs. {payment.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(payment.paymentMonth).toLocaleDateString('en', { month: 'short', year: 'numeric' })}
+                          </TableCell>
+                          <TableCell>
+                            {payment.attributedAgent ? (
+                              <Badge variant="secondary" className="text-xs">{payment.attributedAgent.name}</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">None</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground text-xs">
+                            {format(new Date(payment.createdAt), 'dd MMM yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeletingPayment(payment)}
+                              title="Delete payment record"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  })()}
                 </TableBody>
               </Table>
 
@@ -566,6 +714,90 @@ function StudentsManagementContent() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Deleting...' : 'Delete Student'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deduplicate Confirmation Dialog */}
+      <AlertDialog
+        open={showDeduplicateDialog}
+        onOpenChange={(open) => !open && setShowDeduplicateDialog(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              Clean Duplicate Payment Records?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2.5 text-xs leading-relaxed">
+              <p>
+                The system detected <strong>{duplicateInfo?.totalRedundantRecords} redundant duplicate payment record{duplicateInfo?.totalRedundantRecords === 1 ? '' : 's'}</strong> across {duplicateInfo?.totalDuplicateGroups} student payment{duplicateInfo?.totalDuplicateGroups === 1 ? '' : 's'}.
+              </p>
+              <p>
+                Deduplication will keep the <strong>first (original)</strong> payment record for each student & month, and safely delete all redundant duplicate records.
+              </p>
+              <p className="text-muted-foreground/90">
+                Any extra credit points awarded for the duplicate records will also be automatically cleaned up to keep agent statistics accurate.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeduplicating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeduplicateConfirm}
+              disabled={isDeduplicating}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              id="confirm-clean-duplicates-btn"
+            >
+              {isDeduplicating ? 'Cleaning Duplicates...' : 'Deduplicate & Clean'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single Payment Delete Confirmation Dialog */}
+      <AlertDialog
+        open={Boolean(deletingPayment)}
+        onOpenChange={(open) => !open && setDeletingPayment(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Payment Record?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-xs leading-relaxed">
+              <p>
+                Are you sure you want to permanently delete the payment record for{' '}
+                <strong className="text-foreground">
+                  {deletingPayment?.student?.name || deletingPayment?.mobileNumber}
+                </strong>{' '}
+                of{' '}
+                <strong className="text-foreground">
+                  Rs. {deletingPayment?.amount?.toLocaleString()}
+                </strong>{' '}
+                for{' '}
+                <strong className="text-foreground">
+                  {deletingPayment?.paymentMonth
+                    ? new Date(deletingPayment.paymentMonth).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+                    : ''}
+                </strong>?
+              </p>
+              <p className="text-muted-foreground">
+                This action will remove this payment record from the database and automatically revert any agent credit points awarded for this payment.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingPayment}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePaymentConfirm}
+              disabled={isDeletingPayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              id="confirm-delete-payment-btn"
+            >
+              {isDeletingPayment ? 'Deleting...' : 'Delete Payment'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1020,12 +1252,18 @@ interface RecordPaymentDialogProps {
   onClose: () => void;
 }
 
+interface StudentPreviewItem {
+  _id: string;
+  name: string;
+  grade: string;
+  medium?: 'sinhala' | 'english';
+  status?: string;
+}
+
 function useAttributionPreview(mobileNumber: string, month: string, studentId?: string) {
   const [preview, setPreview] = useState<{
-    student?: {
-      _id: string; name: string; grade: string;
-      medium?: 'sinhala' | 'english'; status?: string;
-    } | null;
+    student?: StudentPreviewItem | null;
+    students?: StudentPreviewItem[];
     attribution?: { agentName: string; isExactMonth: boolean; matchedMonth: string } | null;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -1059,6 +1297,7 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
 
   const [mobileNumber, setMobileNumber] = useState(student?.mobileNumber ?? '');
   const [mobileError, setMobileError] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(student?._id ?? '');
   const [amount, setAmount] = useState('');
   const [customPrice, setCustomPrice] = useState(false);
   const [month, setMonth] = useState(currentMonth);
@@ -1069,26 +1308,45 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
   // Reset when opened with a new student or as standalone
   useEffect(() => {
     setMobileNumber(student?.mobileNumber ?? '');
+    setSelectedStudentId(student?._id ?? '');
     setAmount('');
     setCustomPrice(false);
     setMonth(currentMonth);
     setError(null);
     setMobileError(null);
     setSuccess(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student?._id, open]);
 
   const { preview, isLoading: previewLoading } = useAttributionPreview(
-    mobileNumber, month, student?._id
+    mobileNumber, month, selectedStudentId || student?._id
   );
 
-  // Auto-set fee from student medium
+  // Keep selectedStudentId in sync when preview.students loads
   useEffect(() => {
-    if (preview?.student && !customPrice) {
-      const defaultFee = preview.student.medium === 'english' ? 2000 : 1600;
+    if (preview?.students && preview.students.length > 0) {
+      const exists = preview.students.some((s) => s._id === selectedStudentId);
+      if (!selectedStudentId || !exists) {
+        if (student?._id && preview.students.some((s) => s._id === student._id)) {
+          setSelectedStudentId(student._id);
+        } else {
+          setSelectedStudentId(preview.students[0]._id);
+        }
+      }
+    } else if (preview && (!preview.students || preview.students.length === 0)) {
+      setSelectedStudentId('');
+    }
+  }, [preview?.students, selectedStudentId, student?._id]);
+
+  const activeStudent = preview?.students?.find((s) => s._id === selectedStudentId) || preview?.student;
+
+  // Auto-set fee from active student medium
+  useEffect(() => {
+    if (activeStudent && !customPrice) {
+      const defaultFee = activeStudent.medium === 'english' ? 2000 : 1600;
       setAmount(String(defaultFee));
     }
-  }, [preview?.student, customPrice]);
+  }, [activeStudent, customPrice]);
 
   const handleMobileBlur = () => {
     if (!mobileNumber || student) return; // don't revalidate if pre-filled from row
@@ -1098,7 +1356,7 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
   };
 
   const handleSubmit = async () => {
-    if (!preview?.student) {
+    if (!activeStudent) {
       setError('No student found. Please register the student first.');
       return;
     }
@@ -1115,9 +1373,8 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
         mobileNumber: normaliseSLMobile(mobileNumber),
         amount: finalAmount,
         paymentMonth: month,
+        studentId: activeStudent._id,
       };
-      // Pass studentId when we know the exact student (multi-number scenario)
-      if (student?._id) body.studentId = student._id;
 
       const res = await fetch('/api/payments', {
         method: 'POST',
@@ -1154,7 +1411,7 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
           <DialogDescription>
             {student
               ? `Recording payment for ${student.name} · ${GRADE_OPTIONS.find((g) => g.value === student.grade)?.label}`
-              : 'Enter mobile number to verify the student and calculate tuition fees.'}
+              : 'Enter mobile number to verify student(s) and calculate tuition fees.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -1184,6 +1441,74 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
             )}
           </div>
 
+          {/* Multi-Student Selection if multiple students registered under this number */}
+          {preview?.students && preview.students.length > 1 && (
+            <div className="space-y-1.5 p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="select-student" className="text-xs font-semibold text-primary">
+                  Select Student ({preview.students.length} found) *
+                </Label>
+                <Badge variant="outline" className="text-[10px] bg-background border-primary/30 text-primary">
+                  Multiple Students
+                </Badge>
+              </div>
+              <Select
+                value={selectedStudentId}
+                onValueChange={(val) => {
+                  if (!val) return;
+                  setSelectedStudentId(val);
+                  const found = preview.students?.find((s) => s._id === val);
+                  if (found && !customPrice) {
+                    const defaultFee = found.medium === 'english' ? 2000 : 1600;
+                    setAmount(String(defaultFee));
+                  }
+                }}
+                disabled={Boolean(student)}
+              >
+                <SelectTrigger id="select-student" className="w-full h-10 bg-background text-left">
+                  <SelectValue placeholder="Choose student">
+                    {(val: any) => {
+                      const s = preview?.students?.find((item) => item._id === val) || activeStudent;
+                      if (!s) return 'Choose student';
+                      const gradeLabel = GRADE_OPTIONS.find((g) => g.value === s.grade)?.label ?? s.grade.replace(/_/g, ' ');
+                      const mediumLabel = s.medium === 'english' ? 'English' : 'Sinhala';
+                      return `${s.name} · ${gradeLabel} (${mediumLabel} Medium)`;
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-[--anchor-width]">
+                  {preview.students.map((s) => {
+                    const gradeLabel = GRADE_OPTIONS.find((g) => g.value === s.grade)?.label ?? s.grade.replace(/_/g, ' ');
+                    const mediumLabel = s.medium === 'english' ? 'English' : 'Sinhala';
+                    return (
+                      <SelectItem
+                        key={s._id}
+                        value={s._id}
+                        label={`${s.name} · ${gradeLabel} (${mediumLabel} Medium)`}
+                      >
+                        <div className="flex items-center justify-between w-full gap-3 py-0.5">
+                          <div className="flex flex-col text-left">
+                            <span className="font-semibold text-foreground text-xs">{s.name}</span>
+                            <span className="text-[11px] text-muted-foreground">{gradeLabel}</span>
+                          </div>
+                          <Badge
+                            variant={s.medium === 'english' ? 'default' : 'secondary'}
+                            className="text-[10px] px-1.5 py-0 h-4 capitalize shrink-0"
+                          >
+                            {mediumLabel}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Multiple students share this mobile number. Select the student you are recording payment for.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="payment-month">Payment Month</Label>
             <Input id="payment-month" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
@@ -1197,32 +1522,32 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
                   <Skeleton className="h-4 w-32" />
                   <Skeleton className="h-3 w-48" />
                 </div>
-              ) : preview?.student ? (
+              ) : activeStudent ? (
                 <div className="p-3.5 rounded-lg border bg-card space-y-2.5 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                        {preview.student.name.charAt(0).toUpperCase()}
+                        {activeStudent.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground leading-tight">{preview.student.name}</p>
+                        <p className="text-sm font-semibold text-foreground leading-tight">{activeStudent.name}</p>
                         <p className="text-[11px] text-muted-foreground font-mono">{mobileNumber}</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Badge variant="outline" className="text-[11px] font-medium">
-                        {preview.student.grade.replace(/_/g, ' ').toUpperCase()}
+                        {activeStudent.grade.replace(/_/g, ' ').toUpperCase()}
                       </Badge>
                       <Badge
-                        variant={preview.student.medium === 'english' ? 'default' : 'secondary'}
+                        variant={activeStudent.medium === 'english' ? 'default' : 'secondary'}
                         className="text-[10px] capitalize"
                       >
-                        {preview.student.medium === 'english' ? 'English Medium' : 'Sinhala Medium'}
+                        {activeStudent.medium === 'english' ? 'English Medium' : 'Sinhala Medium'}
                       </Badge>
                     </div>
                   </div>
 
-                  {preview.attribution && (
+                  {preview?.attribution && (
                     <div className="pt-2 border-t flex items-center justify-between text-xs">
                       <span className="text-muted-foreground text-[11px]">Attributed Agent:</span>
                       <AttributionBadge
@@ -1233,7 +1558,7 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
                     </div>
                   )}
                 </div>
-              ) : preview && !preview.student ? (
+              ) : preview && !activeStudent ? (
                 <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-xs text-destructive flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>No student registered with this number. Please register the student first.</span>
@@ -1248,14 +1573,14 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
               <div>
                 <Label className="text-xs font-semibold text-foreground">Tuition Fee</Label>
                 <p className="text-[11px] text-muted-foreground">
-                  {preview?.student?.medium === 'english'
+                  {activeStudent?.medium === 'english'
                     ? 'English Medium fee: Rs. 2,000'
                     : 'Sinhala Medium fee: Rs. 1,600'}
                 </p>
               </div>
               <div className="text-right">
                 <span className="text-lg font-bold font-mono text-primary">
-                  Rs. {Number(amount || (preview?.student?.medium === 'english' ? 2000 : 1600)).toLocaleString()}
+                  Rs. {Number(amount || (activeStudent?.medium === 'english' ? 2000 : 1600)).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -1291,7 +1616,7 @@ function RecordPaymentDialog({ student, open, onClose }: RecordPaymentDialogProp
           <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || success || (SL_MOBILE_REGEX.test(normaliseSLMobile(mobileNumber)) && !preview?.student)}
+            disabled={isLoading || success || (SL_MOBILE_REGEX.test(normaliseSLMobile(mobileNumber)) && !activeStudent)}
             id="submit-payment-btn"
           >
             {success ? '✓ Recorded!' : isLoading ? 'Recording...' : 'Record Payment'}

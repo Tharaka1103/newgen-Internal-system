@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,7 @@ interface AgentUser {
 }
 
 function AgentsManagementContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<AgentUser[]>([]);
   const [totalRemainingPayout, setTotalRemainingPayout] = useState<number>(0);
@@ -328,8 +329,9 @@ function AgentsManagementContent() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-primary hover:text-primary hover:bg-primary/10"
-                        title="View Agent Details"
-                        onClick={() => setViewingAgent(agent)}
+                        title="View Full Agent Profile & Stats"
+                        onClick={() => router.push(`/admin/agents/${agent._id}`)}
+                        id={`view-agent-${agent._id}`}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

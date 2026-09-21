@@ -19,6 +19,7 @@ export const Permission = {
   STUDENTS_DELETE: 'students.delete',
   PAYMENTS_VIEW: 'payments.view',
   PAYMENTS_CREATE: 'payments.create',
+  PAYMENTS_DELETE: 'payments.delete',
   CALL_RECORDS_VIEW: 'call_records.view',
   CALL_RECORDS_CREATE: 'call_records.create',
   CALL_RECORDS_CORRECT: 'call_records.correct',
@@ -113,7 +114,7 @@ export type AuditAction =
   | 'student.create' | 'student.update' | 'student.delete'
   | 'call_record.create' | 'call_record.edit' | 'call_record.admin_correct'
   | 'call_record.edit_request' | 'call_record.edit_approve' | 'call_record.edit_reject'
-  | 'payment.create'
+  | 'payment.create' | 'payment.deduplicate' | 'payment.delete'
   | 'claim.submit' | 'claim.approve' | 'claim.reject' | 'agent.manual_payout'
   | 'setting.update'
   | 'auth.login' | 'auth.logout' | 'auth.failed_login'

@@ -27,6 +27,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         balanceAgg,
         pendingClaimsAgg,
         callRecordsCount,
+        callOutcomesAgg,
         recentLedger,
         recentClaims,
       ] = await Promise.all([
@@ -50,6 +51,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           { $group: { _id: null, totalPending: { $sum: '$requestedAmount' } } },
         ]),
         CallRecord.countDocuments({ agent: objId }),
+        CallRecord.aggregate([
+          { $match: { agent: objId } },
+          { $group: { _id: '$outcome', count: { $sum: 1 } } },
+        ]),
         LoyaltyLedger.find({ agent: objId })
           .sort({ createdAt: -1 })
           .limit(10)
@@ -64,6 +69,26 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       const bal = balanceAgg[0] || { balance: 0, totalEarned: 0, totalPaid: 0 };
       const pendingClaimAmount = pendingClaimsAgg[0]?.totalPending ?? 0;
 
+      const callStats = {
+        total: callRecordsCount,
+        interested: 0,
+        callBackLater: 0,
+        notInterested: 0,
+        noAnswer: 0,
+        conversionRate: 0,
+      };
+
+      callOutcomesAgg.forEach((item) => {
+        if (item._id === 'interested') callStats.interested = item.count;
+        else if (item._id === 'call_back_later') callStats.callBackLater = item.count;
+        else if (item._id === 'not_interested') callStats.notInterested = item.count;
+        else if (item._id === 'no_answer') callStats.noAnswer = item.count;
+      });
+
+      if (callStats.total > 0) {
+        callStats.conversionRate = Math.round((callStats.interested / callStats.total) * 100);
+      }
+
       return NextResponse.json({
         success: true,
         data: {
@@ -73,6 +98,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           totalPaid: bal.totalPaid ?? 0,
           pendingClaimAmount,
           callRecordsCount,
+          callStats,
           recentLedger,
           recentClaims,
         },

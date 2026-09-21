@@ -27,12 +27,22 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
   { timestamps: true }
 );
 
-PaymentRecordSchema.index({ student: 1, paymentMonth: -1 });
+PaymentRecordSchema.index({ student: 1, paymentMonth: 1 }, { unique: true });
 PaymentRecordSchema.index({ attributedAgent: 1, paymentMonth: -1 });
 PaymentRecordSchema.index({ paymentMonth: -1, createdAt: -1 });
 PaymentRecordSchema.index({ paymentMonth: -1, attributedAgent: 1 });
 PaymentRecordSchema.index({ createdAt: -1 });
 PaymentRecordSchema.index({ mobileNumber: 1 });
+
+if (mongoose.models.PaymentRecord) {
+  const existing = mongoose.models.PaymentRecord;
+  const hasUniqueIdx = Object.values(
+    (existing.schema as any).indexes?.() ?? {}
+  ).some((idx: any) => idx?.[0]?.student && idx?.[0]?.paymentMonth && idx?.[1]?.unique);
+  if (!hasUniqueIdx) {
+    delete (mongoose.models as any).PaymentRecord;
+  }
+}
 
 const PaymentRecord: Model<IPaymentRecord> =
   mongoose.models.PaymentRecord || mongoose.model<IPaymentRecord>('PaymentRecord', PaymentRecordSchema);
