@@ -29,6 +29,7 @@ CreditPointSchema.index({ agent: 1, month: -1 });
 CreditPointSchema.index({ agent: 1 });
 CreditPointSchema.index({ month: -1, agent: 1 });
 CreditPointSchema.index({ month: 1, source: 1 });
+CreditPointSchema.index({ source: 1, referenceId: 1 }, { unique: true });
 
 const CreditPoint: Model<ICreditPoint> =
   mongoose.models.CreditPoint || mongoose.model<ICreditPoint>('CreditPoint', CreditPointSchema);

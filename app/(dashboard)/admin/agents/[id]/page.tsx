@@ -44,6 +44,7 @@ interface AgentProfile {
   callRecordsCount: number;
   callStats?: {
     total: number;
+    successCalls: number;
     interested: number;
     callBackLater: number;
     notInterested: number;
@@ -254,6 +255,7 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
 
   const callStats = agent.callStats || {
     total: agent.callRecordsCount || 0,
+    successCalls: 0,
     interested: 0,
     callBackLater: 0,
     notInterested: 0,
@@ -337,7 +339,7 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
           </CardHeader>
           <CardContent className="p-3.5 pt-0">
             <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-              {callStats.interested}
+              {callStats.successCalls}
             </div>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {callStats.conversionRate}% conversion rate
@@ -353,7 +355,9 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
           </CardHeader>
           <CardContent className="p-3.5 pt-0">
             <div className="text-2xl font-bold font-mono">{callStats.callBackLater}</div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{callStats.noAnswer} no answer</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {callStats.interested > 0 ? `${callStats.interested} interested · ` : ''}{callStats.noAnswer} no answer
+            </p>
           </CardContent>
         </Card>
 

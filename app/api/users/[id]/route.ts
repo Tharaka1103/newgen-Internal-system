@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongoose';
-import { User, LoyaltyLedger, ClaimRequest, CallRecord } from '@/lib/db/models';
+import { User, LoyaltyLedger, ClaimRequest, CallRecord, CreditPoint } from '@/lib/db/models';
 import { requireAdmin } from '@/lib/auth/permissions';
 import { UpdateUserSchema } from '@/lib/validations/user';
 import { writeAuditLog, extractRequestMeta } from '@/lib/services/audit.service';
@@ -28,6 +28,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         pendingClaimsAgg,
         callRecordsCount,
         callOutcomesAgg,
+        successStudentIds,
         recentLedger,
         recentClaims,
       ] = await Promise.all([
@@ -55,6 +56,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           { $match: { agent: objId } },
           { $group: { _id: '$outcome', count: { $sum: 1 } } },
         ]),
+        CreditPoint.distinct('referenceId', { agent: objId, source: 'registration_match' }),
         LoyaltyLedger.find({ agent: objId })
           .sort({ createdAt: -1 })
           .limit(10)
@@ -68,14 +70,19 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
       const bal = balanceAgg[0] || { balance: 0, totalEarned: 0, totalPaid: 0 };
       const pendingClaimAmount = pendingClaimsAgg[0]?.totalPending ?? 0;
+      const successCallsCount = (successStudentIds as any[]).length;
+
+      const rate = callRecordsCount > 0 ? (successCallsCount / callRecordsCount) * 100 : 0;
+      const conversionRate = rate < 1 && rate > 0 ? Number(rate.toFixed(1)) : Math.round(rate);
 
       const callStats = {
         total: callRecordsCount,
+        successCalls: successCallsCount,
         interested: 0,
         callBackLater: 0,
         notInterested: 0,
         noAnswer: 0,
-        conversionRate: 0,
+        conversionRate,
       };
 
       callOutcomesAgg.forEach((item) => {
@@ -84,10 +91,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         else if (item._id === 'not_interested') callStats.notInterested = item.count;
         else if (item._id === 'no_answer') callStats.noAnswer = item.count;
       });
-
-      if (callStats.total > 0) {
-        callStats.conversionRate = Math.round((callStats.interested / callStats.total) * 100);
-      }
 
       return NextResponse.json({
         success: true,
